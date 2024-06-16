@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>D:\mywork\Aakash\SucessPoint_Core\SucessPoint_Core\SucessPointCore.Api\bin\Release\net7.0\publish\</_PublishTargetUrl>
+    <History>True|2024-06-02T14:36:35.8376176Z||;True|2024-06-02T20:06:19.3729176+05:30||;True|2024-06-02T19:41:27.4410923+05:30||;True|2024-06-02T19:27:38.6274560+05:30||;True|2024-06-02T19:24:58.7069284+05:30||;True|2024-06-02T19:24:49.6606524+05:30||;True|2024-06-02T18:55:10.1540719+05:30||;True|2024-06-02T18:55:07.3165916+05:30||;True|2024-06-02T18:51:12.4499785+05:30||;True|2024-06-02T18:27:45.0581078+05:30||;True|2024-06-02T18:20:06.2333068+05:30||;True|2024-03-27T00:43:13.9389084+05:30||;True|2024-03-27T00:11:35.0383175+05:30||;False|2024-03-27T00:11:16.2775342+05:30||;True|2024-03-27T00:08:17.2233973+05:30||;True|2024-03-27T00:07:27.1071570+05:30||;True|2024-03-27T00:02:11.7081016+05:30||;True|2024-03-26T23:53:38.6335898+05:30||;True|2024-03-26T23:53:03.4382644+05:30||;True|2024-03-26T23:51:49.6471831+05:30||;True|2024-03-26T23:48:20.6857181+05:30||;True|2024-03-26T23:19:45.5296360+05:30||;True|2024-03-24T17:07:00.3325252+05:30||;True|2024-03-21T23:04:36.0550458+05:30||;True|2024-03-17T23:49:53.2470593+05:30||;True|2024-03-17T23:47:18.5445247+05:30||;True|2024-03-15T00:18:16.8612188+05:30||;True|2024-03-15T00:18:05.8562749+05:30||;True|2024-03-15T00:00:57.4662075+05:30||;</History>
+    <LastFailureDetails />
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+  </PropertyGroup>
+  <ItemGroup>
+    <DestinationConnectionStrings Include="SucessPointString">
+      <Value>Server=localhost%3bDatabase=premiersolution_in_01%3bUid=premiersolution_01%3bPwd=Zqtt5941!%3b</Value>
+    </DestinationConnectionStrings>
+  </ItemGroup>
+</Project>
