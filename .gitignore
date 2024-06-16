@@ -1,0 +1,13 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/SucessPointCore.Infrastructure/bin
+/SucessPointCore.Domain/bin
+/SuccessPointCore.Application/bin
+/SucessPointCore.Infrastructure/obj
+/SucessPointCore.Domain/obj
+/SucessPointCore.Api/bin
+/SuccessPointCore.Application/obj
+/SucessPointCore.Api/obj
