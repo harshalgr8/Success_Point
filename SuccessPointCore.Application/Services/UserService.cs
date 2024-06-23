@@ -1,6 +1,8 @@
-﻿using Dapper;
+﻿
+using Dapper;
 using MySqlConnector;
 using SuccessPointCore.Application.Interfaces;
+using SucessPointCore.Api.Domain.Helpers;
 using SucessPointCore.Domain.Entities;
 using SucessPointCore.Domain.Helpers;
 using SucessPointCore.Infrastructure.Interfaces;
@@ -72,7 +74,7 @@ namespace SuccessPointCore.Application.Services
             string passwordKey = _userRepository.GetUserPasswordKey(username);
             if (string.IsNullOrWhiteSpace(passwordKey))
             {
-                return new AuthenticatedUser();
+                return null ;
             }
 
             var encryptedPassword = ComputeSHA256Hash(password.Trim() + passwordKey + AppConfigHelper.PasswordEncyptionKey);
@@ -84,27 +86,7 @@ namespace SuccessPointCore.Application.Services
 
         public bool UpsertRefreshToken(UpsertRefreshToken tokenData)
         {
-            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
-            {
-                try
-                {
-                    conn.Open();
-
-                    DynamicParameters parameters = new DynamicParameters();
-                    parameters.Add("p_UserID", tokenData.UserID);
-                    parameters.Add("p_RefreshToken", tokenData.RefreshToken);
-
-                    return conn.Execute("sp_SP_RefreshToken_Upsert", param: parameters) > 0;
-                }
-                catch (Exception)
-                {
-                    if (conn.State == ConnectionState.Open)
-                    {
-                        conn.Close();
-                    }
-                    throw;
-                }
-            }
+           return _userRepository.UpsertRefreshToken(tokenData);
         }
 
         public IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID)
@@ -112,5 +94,36 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.GetEnrolledCourses(userID);
         }
 
+        public (bool isValid, string message) ValidateLoginRequest(LoginUserRequest userinfo)
+        {
+            if (string.IsNullOrWhiteSpace(userinfo.GrantType) || userinfo.GrantType != "password")
+            {
+                return (false, "invalid grant type");
+            }
+
+            if (string.IsNullOrWhiteSpace(userinfo.UserName) || string.IsNullOrWhiteSpace(userinfo.Password))
+            {
+                return (false, "invalid credentials values");
+            }
+
+            return (true, string.Empty);
+        }
+
+        public bool ShouldCreateAdminUser(LoginUserRequest userinfo)
+        {
+            return userinfo.UserName.Trim() == "createadminuser" &&
+                   userinfo.Password.Trim() == $"adm1n{DateTime.Now.ToString("ddMMyyyy")}pwd" &&
+                   GetUserCount() == 0;
+        }
+
+        public void CreateAdminUser(string password)
+        {
+            CreateUser(new CreateUser { UserName = "admin", Password = password, Active = true , UserType =1});
+        }
+
+        public (string Token, Guid RefreshToken) GenerateToken(AuthenticatedUser authenticatedUser)
+        {
+            return new JwtAuthManager(AppConfigHelper.JWTTokenEncryptionKey, AppConfigHelper.Issuer, AppConfigHelper.Audience).GenerateTokens(authenticatedUser);
+        }
     }
 }

@@ -19,10 +19,17 @@ namespace SuccessPointCore.Application.Interfaces
 
         AuthenticatedUser CheckLoginCredentials(string username, string password);
 
-        //(string Token, Guid RefreshToken) GetToken(User userinfo);
-
+      
         bool UpsertRefreshToken(UpsertRefreshToken tokenData);
 
         IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID);
+
+        (bool isValid, string message) ValidateLoginRequest(LoginUserRequest userinfo);
+
+        bool ShouldCreateAdminUser(LoginUserRequest userinfo);
+
+        void CreateAdminUser(string password);
+
+        (string Token, Guid RefreshToken) GenerateToken(AuthenticatedUser authenticatedUser);
     }
 }

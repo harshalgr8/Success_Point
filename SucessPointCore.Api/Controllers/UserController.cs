@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SuccessPointCore.Application.Custom_Filters;
 using SuccessPointCore.Application.Interfaces;
-using SucessPointCore.Api.Filters;
-using SucessPointCore.Api.Helpers;
+using SucessPointCore.Api.Domain.Helpers;
 using SucessPointCore.Domain.Entities;
 
 namespace SucessPointCore.Api.Controllers
@@ -10,15 +10,26 @@ namespace SucessPointCore.Api.Controllers
     public class UserController : ControllerBase
     {
         IUserService _userService;
+
+        #region Construcor
         public UserController(IUserService userService)
         {
             _userService = userService;
         }
 
+        #endregion
+
+        #region Endpoints
+
+        /// <summary>
+        /// This enpoint will be called by Admin to create enrolled student account manually.
+        /// </summary>
+        /// <param name="userinfo"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("api/CreateUser")]
         [Authorize]
-        [ServiceFilter(typeof(JwtAuthenticationFilter))]
+        [AuthUserType(1)]
         public IActionResult AddUser([FromBody] CreateUser userinfo)
         {
             if (!ModelState.IsValid)
@@ -33,11 +44,15 @@ namespace SucessPointCore.Api.Controllers
             return Ok(okResponse);
         }
 
-
+        /// <summary>
+        /// This enpoint will be used as dashboard showing how many user are registered with us
+        /// Only admin and User will able to access it and result will vary based on Auth claims
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("api/GetTotalUser")]
         [Authorize]
-        ////[ServiceFilter(typeof(JwtAuthenticationFilter))]
+        [AuthUserType(1,2)]
         public IActionResult GetTotalUser()
         {
             if (!ModelState.IsValid)
@@ -50,9 +65,14 @@ namespace SucessPointCore.Api.Controllers
             return Ok(okResponse);
         }
 
+        /// <summary>
+        /// This endpoint will return all students basic information
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("api/GetStudents")]
-        //[ServiceFilter(typeof(JwtAuthenticationFilter))]
+        [Authorize]
+        [AuthUserType(1)]
         public IActionResult GetStudent()
         {
             if (!ModelState.IsValid)
@@ -65,9 +85,14 @@ namespace SucessPointCore.Api.Controllers
             return Ok(okResponse);
         }
 
+        /// <summary>
+        /// This endpoint will return logged in student enrolled course information list
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("api/GetEnrolledCourses")]
-        //[ServiceFilter(typeof(JwtAuthenticationFilter))]
+        [AuthUserType(2)]
         public IActionResult GetEnrolledCourses()
         {
             if (!ModelState.IsValid)
@@ -94,6 +119,10 @@ namespace SucessPointCore.Api.Controllers
             return Ok(okResponse);
         }
 
+        #endregion
+
+        #region Private functions
+
         private IEnumerable<string> GetModelStateErrors()
         {
             int errorNumber = 1;
@@ -102,5 +131,8 @@ namespace SucessPointCore.Api.Controllers
                 .SelectMany(state => state.Errors)
                 .Select(error => $"{errorNumber++}. {error.ErrorMessage}");
         }
+
+        #endregion
+
     }
 }

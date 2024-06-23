@@ -2,14 +2,15 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using SuccessPointCore.Application.Interfaces;
 using SuccessPointCore.Application.Services;
 using SucessPointCore.Api.Filters;
-using SucessPointCore.Api.Helpers;
-using SucessPointCore.Api.Middlewares;
 using SucessPointCore.Domain.Helpers;
+using SucessPointCore.Infrastructure;
 using SucessPointCore.Infrastructure.Interfaces;
 using SucessPointCore.Infrastructure.Repositories;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,32 +36,17 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    // Define the security scheme for JWT
-    var securityScheme = new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "JWT Authorization header using the Bearer scheme",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT"
-    };
-
-
-
     c.OperationFilter<SwaggerIgnoreFilter>();
 
-    // on top icon to enter credentials
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
         Description = "Please insert JWT with Bearer into field",
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
+        Type = SecuritySchemeType.Http,
         Scheme = "Bearer"
     });
 
-    // Add the security requirement to operations that require authorization
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -74,11 +60,12 @@ builder.Services.AddSwaggerGen(c =>
             },
             new string[] { }
         }
+    });
+
 
 });
 
 
-});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -91,9 +78,69 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = builder.Configuration["SecurityKeys:Issuer"],
                 ValidAudience = builder.Configuration["SecurityKeys:Audience"],
+                RequireExpirationTime = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["SecurityKeys:JWTTokenEncryptionKey"]))
             };
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+
+                    var endpoint = context.HttpContext.GetEndpoint();
+
+                    if (endpoint != null)
+                    {
+                        // check if the endpoint has the authorize attribute
+                        var authorizeattributes = endpoint.Metadata
+                            .Where(m => m is Microsoft.AspNetCore.Authorization.AuthorizeAttribute)
+                            .ToList();
+
+                        if (authorizeattributes.Any())
+                        {
+                            var header_token = context.HttpContext.Request.Headers["authorization"].FirstOrDefault()?.Split(" ").Last();
+
+                            if (header_token == null)
+                            {
+                                return Un_AuthorizedResponse(context);
+                            }
+
+                            
+
+                            if (!ValidateToken(header_token))
+                            {
+                                return Un_AuthorizedResponse(context);
+                            }
+                        }
+                    }
+
+                    return Task.CompletedTask;
+                },
+                //OnAuthenticationFailed = context =>
+                //{
+                //    context.NoResult();
+                //    context.Response.StatusCode = 500;
+                //    context.Response.ContentType = "text/plain";
+                //    return context.Response.WriteAsync(context.Exception.ToString());
+                //},
+                //OnTokenValidated = context =>
+                //{
+                //    // log additional details here if needed
+                //    return Task.CompletedTask;
+                //},
+                //OnChallenge = context =>
+                //{
+                //    context.HandleResponse();
+                //    context.Response.StatusCode = 401;
+                //    context.Response.ContentType = "application/json";
+                //    var result = JsonConvert.SerializeObject(new { error = "you are not authorized" });
+                //    return context.Response.WriteAsync(result);
+                //}
+            };
         });
+
+// Add logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 builder.Services.AddScoped<IErrorLogRepository, ErrorLogRepository>();
 builder.Services.AddScoped<IErrorLogService, ErrorLogService>();
@@ -109,7 +156,8 @@ AppConfigHelper.PasswordEncyptionKey = app.Configuration["SecurityKeys:PasswordE
 AppConfigHelper.JWTTokenEncryptionKey = app.Configuration["SecurityKeys:JWTTokenEncryptionKey"];
 AppConfigHelper.Issuer = app.Configuration["SecurityKeys:Issuer"];
 AppConfigHelper.Audience = app.Configuration["SecurityKeys:Audience"];
-
+AppConfigHelper.TokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:TokenExpiryMinutes"]);
+AppConfigHelper.RefreshTokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:RefreshTokenExpiryMinutes"]);
 
 
 // Configure the HTTP request pipeline.
@@ -149,20 +197,48 @@ void CreateDefault()
     // hence I thought to keep table with SP abbrivation to identify for which project this table refers to.
     // here sp_SP means small sp (store procedure abbrivation) and capital (SP) is for SuccessPoint project database.
     var initiateSqlDbScript = new DbSchemaUpdate(AppConfigHelper.ConnectionString);
-
-    // create ErrorLog table
-    initiateSqlDbScript.CreateTable_sp_errorlog();
-
-    // create User table
-    initiateSqlDbScript.CreateTable_Sp_Users();
-
-    // create Standard table
-    initiateSqlDbScript.CreateTable_SP_Standard();
-
-    // create Course table
-    initiateSqlDbScript.CreateTable_sp_course();
-
-    // create Course Videos table
-    initiateSqlDbScript.CreateTable_sp_coursevideos();
+    initiateSqlDbScript.CreateDefaults();
 }
 app.Run();
+
+static Task Un_AuthorizedResponse(MessageReceivedContext context)
+{
+    context.NoResult();
+    context.Response.StatusCode = 401;
+    context.Response.ContentType = "text/plain";
+    return context.Response.WriteAsync("Un-Authorized request received");
+}
+
+bool ValidateToken(string token)
+{
+    var tokenHandler = new JwtSecurityTokenHandler();
+    var key = Encoding.UTF8.GetBytes(builder.Configuration["SecurityKeys:JWTTokenEncryptionKey"]); // Change here
+
+    try
+    {
+        tokenHandler.ValidateToken(token, new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["SecurityKeys:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["SecurityKeys:Audience"],
+            ValidateLifetime = true,
+        }, out SecurityToken validatedToken);
+
+        return true;
+    }
+    catch (SecurityTokenException ex)
+    {
+        // Log the exception for debugging
+        Console.WriteLine($"Token validation failed: {ex.Message}");
+        return false;
+    }
+    catch (Exception ex)
+    {
+        // Log other exceptions
+        Console.WriteLine($"An error occurred: {ex.Message}");
+        return false;
+    }
+}

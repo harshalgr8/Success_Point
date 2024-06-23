@@ -9,5 +9,6 @@
         public static string Audience { get; set; }
 
         public static int TokenExpiryMinute { get; set; } = 30;
+        public static int RefreshTokenExpiryMinute { get; set; } = 60;
     }
 }

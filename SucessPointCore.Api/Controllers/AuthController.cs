@@ -1,13 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SuccessPointCore.Application.Interfaces;
-using SucessPointCore.Api.Helpers;
 using SucessPointCore.Domain.Entities;
 using SucessPointCore.Domain.Helpers;
 
 namespace SucessPointCore.Api.Controllers
 {
-    [AllowAnonymous]
     public class AuthController : ControllerBase
     {
         IUserService _userService;
@@ -18,6 +16,11 @@ namespace SucessPointCore.Api.Controllers
             _errorLogService = errorLogService;
         }
 
+        /// <summary>
+        /// this endpoint will be entry point for user. The token generated will decide further what action/endpoint user can perform.
+        /// </summary>
+        /// <param name="userinfo"></param>
+        /// <returns></returns>
         [HttpPost()]
         [Route("api/Login")]
         [AllowAnonymous]
@@ -25,53 +28,50 @@ namespace SucessPointCore.Api.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(userinfo.GrantType) || userinfo.GrantType != "password")
+                var validationResult = _userService.ValidateLoginRequest(userinfo);
+                if (!validationResult.isValid)
                 {
-                    var errorResponse = new { isSuccess = false, message = "invalid grant type", Details = new { } };
-                    return BadRequest(errorResponse);
+                    return BadRequest(new { isSuccess = false, message = validationResult.message, Details = new { } });
                 }
 
-                if (string.IsNullOrWhiteSpace(userinfo.UserName) || string.IsNullOrWhiteSpace(userinfo.Password))
+                if (_userService.ShouldCreateAdminUser(userinfo))
                 {
-                    var errorResponse = new { isSuccess = false, message = "invalid credentials values", Details = new { } };
-                    return BadRequest(errorResponse);
+                    _userService.CreateAdminUser(userinfo.Password);
+                    return Created("", new { isSuccess = false, message = "default User created", Details = new { } });
                 }
-
-                if (userinfo.UserName.Trim() == "createadminuser" && userinfo.Password == string.Format("adm1n{0}pwd", DateTime.Now.ToString("ddMMyyyy")) && _userService.GetUserCount() == 0)
-                {
-                    var newUserID = _userService.CreateUser(new CreateUser { UserName = "admin", Password = userinfo.Password, Active = true });
-
-
-                    var errorResponse = new { isSuccess = false, message = "default User created", Details = new { } };
-                    return Created("", errorResponse);
-                }
-
 
                 var authenticatedUser = _userService.CheckLoginCredentials(userinfo.UserName, userinfo.Password);
                 if (authenticatedUser == null)
                 {
-                    var errorResponse = new { isSuccess = false, message = "Invalid Credentials", Details = new { } };
-                    return Unauthorized(errorResponse);
+                    return Unauthorized(new { isSuccess = false, message = "Invalid Credentials", Details = new { } });
                 }
 
-                var result = GetToken(new User { UserName = userinfo.UserName, UserID = authenticatedUser.UserID });
-                _userService.UpsertRefreshToken(new UpsertRefreshToken { UserID = authenticatedUser.UserID, RefreshToken = result.RefreshToken });
+                // JWT Token Expiry time
+                var tokenExpiryTime = new DateTime().ToUniversalTime().AddMinutes(Convert.ToInt32(AppConfigHelper.TokenExpiryMinute));
 
-                var okResponse = new { isSuccess = true, message = "login success", Details = new { usertype = authenticatedUser.UserType, token = result.Token, token_expires_in = AppConfigHelper.TokenExpiryMinute, refresh_token = result.RefreshToken } };
+                var tokenResult = _userService.GenerateToken(authenticatedUser);
+                _userService.UpsertRefreshToken(new UpsertRefreshToken() { UserID = authenticatedUser.UserID, RefreshToken = tokenResult.RefreshToken, RefreshTokenExpiryTime = tokenExpiryTime });
+
+                var okResponse = new
+                {
+                    isSuccess = true,
+                    message = "login success",
+                    Details = new
+                    {
+                        usertype = authenticatedUser.UserType,
+                        token = tokenResult.Token,
+                        token_expires_in = tokenExpiryTime,
+                        refresh_token = tokenResult.RefreshToken
+                    }
+                };
 
                 return Ok(okResponse);
             }
             catch (Exception ex)
             {
                 _errorLogService.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
-                return StatusCode(500, "Internal Error Occured. Please Contact Us");
+                return StatusCode(500, "Internal Error Occurred. Please Contact Us");
             }
-
-        }
-
-        private (string Token, Guid RefreshToken) GetToken(User userinfo)
-        {
-            return new JwtAuthManager(AppConfigHelper.JWTTokenEncryptionKey, AppConfigHelper.Issuer, AppConfigHelper.Audience).GenerateTokens(userinfo);
         }
     }
 }

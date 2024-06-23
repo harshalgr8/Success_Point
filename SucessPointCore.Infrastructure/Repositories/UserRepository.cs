@@ -4,6 +4,7 @@ using SucessPointCore.Domain.Entities;
 using SucessPointCore.Domain.Helpers;
 using SucessPointCore.Infrastructure.Interfaces;
 using System.Data;
+using System.Reflection.Metadata;
 
 namespace SucessPointCore.Infrastructure.Repositories
 {
@@ -18,14 +19,12 @@ namespace SucessPointCore.Infrastructure.Repositories
                     conn.Open();
 
                     DynamicParameters parameters = new DynamicParameters();
-                    parameters.Add("p_EmailID", userData.Email);
-                    parameters.Add("p_Mobile", userData.MobileNo);
                     parameters.Add("p_Username", userData.UserName);
                     parameters.Add("p_Password", userData.EncryptedPassword);
                     parameters.Add("p_UserType", userData.UserType);
                     parameters.Add("p_Active", userData.Active);
                     parameters.Add("p_Passwordkey", userData.PasswordKey);
-
+                    parameters.Add("p_DisplayName", userData.DisplayName);
                     return Convert.ToInt32(conn.ExecuteScalar("sp_SP_User_Insert", param: parameters));
                 }
                 catch (Exception)
@@ -49,7 +48,7 @@ namespace SucessPointCore.Infrastructure.Repositories
 
                     DynamicParameters parameters = new DynamicParameters();
                     parameters.Add("p_UserID", userData.UserID);
-                    parameters.Add("p_EmailID", userData.Email);
+                    parameters.Add("p_DisplayName", userData.DisplayName);
                     parameters.Add("p_Mobile", userData.MobileNo);
                     parameters.Add("p_Username", userData.UserName);
                     parameters.Add("p_UserType", userData.UserType);
@@ -126,7 +125,7 @@ namespace SucessPointCore.Infrastructure.Repositories
                     DynamicParameters parameters = new DynamicParameters();
                     parameters.Add("p_Username", userName);
 
-                    return Convert.ToString(conn.ExecuteScalar("sp_SP_Users_GetPasswordKeyByUserName", parameters));
+                    return Convert.ToString(conn.ExecuteScalar("sp_SP_User_GetPasswordKeyByUserName", parameters));
                 }
                 catch (Exception)
                 {
@@ -151,7 +150,7 @@ namespace SucessPointCore.Infrastructure.Repositories
                     parameters.Add("p_Username", userName);
                     parameters.Add("p_EncryptedPassword", encryptedPassword);
 
-                    return conn.QuerySingleOrDefault<AuthenticatedUser>("sp_SP_Users_CheckCredentials", parameters);
+                    return conn.QuerySingleOrDefault<AuthenticatedUser>("sp_SP_User_CheckCredentials", parameters);
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -192,6 +191,32 @@ namespace SucessPointCore.Infrastructure.Repositories
 
                     return courseList;
 
+                }
+                catch (Exception)
+                {
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    throw;
+                }
+            }
+        }
+
+        public bool UpsertRefreshToken(UpsertRefreshToken tokenData)
+        {
+            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
+            {
+                try
+                {
+                    conn.Open();
+
+                    DynamicParameters parameters = new DynamicParameters();
+                    parameters.Add("@p_UserID", tokenData.UserID);
+                    parameters.Add("@p_RefreshToken", tokenData.RefreshToken);
+                    parameters.Add("@p_Token_Expiry_Minute", tokenData.RefreshTokenExpiryTime);
+
+                    return conn.Execute("sp_SP_RefreshToken_Upsert", param: parameters) > 0;
                 }
                 catch (Exception)
                 {

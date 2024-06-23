@@ -1,11 +1,10 @@
 ﻿using Dapper;
 using MySqlConnector;
-using SucessPointCore.Api.Constants;
+using SucessPointCore.Domain.Constants;
 using System.Data;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-namespace SucessPointCore.Api.Helpers
+namespace SucessPointCore.Infrastructure
 {
     public class DbSchemaUpdate
     {
@@ -33,7 +32,7 @@ namespace SucessPointCore.Api.Helpers
                 queryBuilder.AppendLine("`UserID` INT(11) DEFAULT NULL,");
                 queryBuilder.AppendLine("`LogDate` DATETIME NOT NULL,");
                 queryBuilder.AppendLine("PRIMARY KEY (`ErrorLogID`)");
-                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
+                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
 
                 string queryString = queryBuilder.ToString();
 
@@ -53,7 +52,7 @@ namespace SucessPointCore.Api.Helpers
         /// <summary>
         /// It creates Users table which will storing user(student) of platform including admin
         /// </summary>
-        public async void CreateTable_Sp_Users()
+        public async void CreateTable_Sp_User()
         {
             try
             {
@@ -61,18 +60,15 @@ namespace SucessPointCore.Api.Helpers
 
                 StringBuilder queryBuilder = new StringBuilder();
 
-                queryBuilder.AppendLine("CREATE TABLE IF NOT EXISTS `sp_users` (");
+                queryBuilder.AppendLine("CREATE TABLE IF NOT EXISTS `sp_user` (");
                 queryBuilder.AppendLine("`UserID` INT(11) NOT NULL AUTO_INCREMENT,");
-                queryBuilder.AppendLine("`EmailID` VARCHAR(100) DEFAULT NULL,");
-                queryBuilder.AppendLine("`MobileNo` VARCHAR(25) DEFAULT NULL,");
                 queryBuilder.AppendLine("`UserName` VARCHAR(100) NOT NULL,");
                 queryBuilder.AppendLine("`Password` VARCHAR(250) NOT NULL,");
                 queryBuilder.AppendLine("`UserType` TINYINT(1) NOT NULL,");
                 queryBuilder.AppendLine("`Active` TINYINT(1) NOT NULL DEFAULT 0,");
                 queryBuilder.AppendLine("`PasswordKey` VARCHAR(10) DEFAULT NULL,");
-                queryBuilder.AppendLine("`StandardID` INT(11) DEFAULT NULL,");
                 queryBuilder.AppendLine("PRIMARY KEY (`UserID`)");
-                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
+                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
 
                 string queryString = queryBuilder.ToString();
 
@@ -103,7 +99,7 @@ namespace SucessPointCore.Api.Helpers
                 queryBuilder.AppendLine("`StandardName` VARCHAR(50) NOT NULL,");
                 queryBuilder.AppendLine("`Active` BIT(1) NOT NULL DEFAULT b'1',");
                 queryBuilder.AppendLine("PRIMARY KEY (`StandardID`)");
-                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
+                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
 
                 string queryString = queryBuilder.ToString();
 
@@ -134,7 +130,7 @@ namespace SucessPointCore.Api.Helpers
                 queryBuilder.AppendLine("`UserID` INT(11) DEFAULT NULL,");
                 queryBuilder.AppendLine("PRIMARY KEY (`CourseID`),");
                 queryBuilder.AppendLine("KEY `UserID` (`UserID`)");
-                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
+                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
 
                 string queryString = queryBuilder.ToString();
 
@@ -165,7 +161,36 @@ namespace SucessPointCore.Api.Helpers
                 queryBuilder.AppendLine("`Order` INT(11) NOT NULL,");
                 queryBuilder.AppendLine("`VideoHeading` VARCHAR(100) NOT NULL,");
                 queryBuilder.AppendLine("PRIMARY KEY (`VideoID`)");
-                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
+                queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
+
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                }
+            }
+            catch (MySqlException ex)
+            {
+                await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"function : CreateTable_Sp_User \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        public async void CreateTable_sp_student()
+        {
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+                queryBuilder.AppendLine($"CREATE TABLE IF NOT EXISTS `sp_student` (");
+                queryBuilder.AppendLine("    `StudentID` INT NOT NULL AUTO_INCREMENT,");
+                queryBuilder.AppendLine("    `UserID` INT NOT NULL,");
+                queryBuilder.AppendLine("    `DisplayName` VARCHAR(255) NOT NULL,");
+                queryBuilder.AppendLine("    `StandardID` INT NOT NULL,");
+                queryBuilder.AppendLine("    `CourseID` INT NOT NULL,");
+                queryBuilder.AppendLine("    PRIMARY KEY (`StudentID`)");
+                queryBuilder.AppendLine(") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
 
                 string queryString = queryBuilder.ToString();
 
@@ -212,6 +237,8 @@ namespace SucessPointCore.Api.Helpers
                 Console.WriteLine(ex.ToString());
             }
         }
+
+
         #endregion
 
         #region Procedures
@@ -245,6 +272,39 @@ namespace SucessPointCore.Api.Helpers
         public void Update_SP_User_GetUserEnrolledCourses() { }
 
         public void Add_SP_ErrorLog_Insert() { }
+
+        public void CreateDefaults()
+        {
+            #region Tables
+
+            // create ErrorLog table
+            CreateTable_sp_errorlog();
+
+            // create User table
+            CreateTable_Sp_User();
+
+            // create Standard table
+            CreateTable_SP_Standard();
+
+            // create Course table
+            CreateTable_sp_course();
+
+            // create Course Videos table
+            CreateTable_sp_coursevideos();
+
+            // create FilesInfo table
+            CreteTable_sp_filesinfo();
+            
+            // create Student table
+            CreateTable_sp_student();
+
+            #endregion
+
+            #region Procedures
+
+            #endregion
+
+        }
 
         #endregion
 

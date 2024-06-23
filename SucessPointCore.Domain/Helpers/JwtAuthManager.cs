@@ -2,10 +2,12 @@
 using SucessPointCore.Domain.Entities;
 using SucessPointCore.Domain.Helpers;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 
-namespace SucessPointCore.Api.Helpers
+namespace SucessPointCore.Api.Domain.Helpers
 {
     public class JwtAuthManager
     {
@@ -20,48 +22,36 @@ namespace SucessPointCore.Api.Helpers
             _audience = audience;
         }
 
-        public (string accessToken, Guid refreshToken) GenerateTokens(User user)
+        public (string accessToken, Guid refreshToken) GenerateTokens(AuthenticatedUser user)
         {
+            var symmetricKey = Encoding.UTF8.GetBytes(_secretKey); // Change here
+            var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(symmetricKey), SecurityAlgorithms.HmacSha256);
 
-            var symmetricKey = Convert.FromBase64String(_secretKey);
-            var tokenHandler = new JwtSecurityTokenHandler();
-
-            var now = DateTime.UtcNow;
+            var tokenExpiresAfter = DateTime.UtcNow.AddMinutes(AppConfigHelper.TokenExpiryMinute);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
-                        {
-                            new Claim("name", user.UserName),
+                {
+            new Claim("utype", user.UserType.ToString()),
             new Claim("uid", user.UserID.ToString())
-                        }),
-
-                Expires = now.AddMinutes(Convert.ToInt32(AppConfigHelper.TokenExpiryMinute)),
-
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(symmetricKey), SecurityAlgorithms.HmacSha256Signature)
+        }),
+                NotBefore = DateTime.UtcNow,
+                IssuedAt = DateTime.UtcNow,
+                Expires = tokenExpiresAfter,
+                SigningCredentials = signingCredentials,
+                Issuer = AppConfigHelper.Issuer,
+                Audience = AppConfigHelper.Audience,
+                TokenType = "JWT"
             };
 
-            SecurityToken securityToken = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var securityToken = tokenHandler.CreateToken(tokenDescriptor);
             var accessToken = tokenHandler.WriteToken(securityToken);
 
             var refreshToken = GenerateRefreshToken();
 
-
             return (accessToken, refreshToken);
         }
-
-        private Guid GenerateRefreshToken()
-        {
-            byte[] randomNumber = new byte[16];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(randomNumber);
-            }
-
-            return new Guid(randomNumber);
-        }
-
-
-       
 
         public static ClaimsPrincipal GetPrincipal(string token)
         {
@@ -93,6 +83,22 @@ namespace SucessPointCore.Api.Helpers
                 return null;
             }
         }
+
+        #region Private Functions
+
+        private Guid GenerateRefreshToken()
+        {
+            byte[] randomNumber = new byte[16];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+            }
+
+            return new Guid(randomNumber);
+        }
+
+        #endregion
+
 
     }
 

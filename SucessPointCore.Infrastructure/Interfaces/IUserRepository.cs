@@ -16,5 +16,6 @@ namespace SucessPointCore.Infrastructure.Interfaces
         AuthenticatedUser CheckCredentials(string userName, string encryptedPassword);
 
         IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID);
+        bool UpsertRefreshToken(UpsertRefreshToken tokenData);
     }
 }

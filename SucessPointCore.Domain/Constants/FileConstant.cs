@@ -1,4 +1,4 @@
-﻿namespace SucessPointCore.Api.Constants
+﻿namespace SucessPointCore.Domain.Constants
 {
     public class FileConstant
     {
