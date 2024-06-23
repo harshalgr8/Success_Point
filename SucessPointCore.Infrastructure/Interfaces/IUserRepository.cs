@@ -17,5 +17,7 @@ namespace SucessPointCore.Infrastructure.Interfaces
 
         IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID);
         bool UpsertRefreshToken(UpsertRefreshToken tokenData);
+        bool IsEmailAvailableForSignup(string userEmailId);
+        bool SignupUser(SignupCredentials userdetails);
     }
 }

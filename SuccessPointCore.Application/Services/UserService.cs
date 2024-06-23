@@ -1,12 +1,9 @@
-﻿
-using Dapper;
-using MySqlConnector;
-using SuccessPointCore.Application.Interfaces;
+﻿using SuccessPointCore.Application.Interfaces;
 using SucessPointCore.Api.Domain.Helpers;
+using SucessPointCore.Domain.Constants;
 using SucessPointCore.Domain.Entities;
 using SucessPointCore.Domain.Helpers;
 using SucessPointCore.Infrastructure.Interfaces;
-using System.Data;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,12 +11,12 @@ namespace SuccessPointCore.Application.Services
 {
     public class UserService : IUserService
     {
-        IUserRepository _userRepository;
-
-        public UserService(IUserRepository userRepository)
+        readonly IUserRepository _userRepository;
+        readonly IEmailService _emailService;
+        public UserService(IUserRepository userRepository, IEmailService emailService)
         {
             _userRepository = userRepository;
-
+            _emailService = emailService;
         }
 
         public int GetUserCount()
@@ -27,32 +24,17 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.GetUserCount();
         }
 
+
         public int CreateUser(CreateUser userinfo)
         {
-            string passwordKey = new NumberGenerator().GenerateRandomText(10);
+            var (encyptedPassword, passwordKey) = GetEncryptedPasswordAndPasswordKey(userinfo.Password);
 
             userinfo.PasswordKey = passwordKey;
-            userinfo.EncryptedPassword = ComputeSHA256Hash(userinfo.Password.Trim() + passwordKey + AppConfigHelper.PasswordEncyptionKey);
+            userinfo.EncryptedPassword = encyptedPassword;
             return _userRepository.AddUser(userinfo);
         }
 
-        public string ComputeSHA256Hash(string input)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] inputBytes = Encoding.UTF8.GetBytes(input);
-                byte[] hashBytes = sha256.ComputeHash(inputBytes);
-
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < hashBytes.Length; i++)
-                {
-                    builder.Append(hashBytes[i].ToString("x2"));
-                }
-
-                return builder.ToString();
-            }
-        }
-
+  
         public bool UpdateUserInfo(CreateUser userinfo)
         {
             return _userRepository.UpdateUserInfo(userinfo);
@@ -63,18 +45,14 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.UpdateUserPassword(userinfo);
         }
 
-        private string GetUserPassworkdKey(string userName)
-        {
-
-            return _userRepository.GetUserPasswordKey(userName);
-        }
+       
         public AuthenticatedUser CheckLoginCredentials(string username, string password)
         {
 
             string passwordKey = _userRepository.GetUserPasswordKey(username);
             if (string.IsNullOrWhiteSpace(passwordKey))
             {
-                return null ;
+                return null;
             }
 
             var encryptedPassword = ComputeSHA256Hash(password.Trim() + passwordKey + AppConfigHelper.PasswordEncyptionKey);
@@ -82,11 +60,9 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.CheckCredentials(username, encryptedPassword);
         }
 
-
-
         public bool UpsertRefreshToken(UpsertRefreshToken tokenData)
         {
-           return _userRepository.UpsertRefreshToken(tokenData);
+            return _userRepository.UpsertRefreshToken(tokenData);
         }
 
         public IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID)
@@ -118,12 +94,74 @@ namespace SuccessPointCore.Application.Services
 
         public void CreateAdminUser(string password)
         {
-            CreateUser(new CreateUser { UserName = "admin", Password = password, Active = true , UserType =1});
+            CreateUser(new CreateUser { UserName = "admin", Password = password, Active = true, UserType = 1 });
         }
 
         public (string Token, Guid RefreshToken) GenerateToken(AuthenticatedUser authenticatedUser)
         {
             return new JwtAuthManager(AppConfigHelper.JWTTokenEncryptionKey, AppConfigHelper.Issuer, AppConfigHelper.Audience).GenerateTokens(authenticatedUser);
         }
+
+        public bool IsEmailAvailableForSignup(string userEmailId)
+        {
+            return _userRepository.IsEmailAvailableForSignup(userEmailId);
+        }
+        public string RegisterUserBySignup(SignupCredentials userdetails)
+        {
+            string vid = Guid.NewGuid().ToString();
+            string tfc_code = new Random().Next(1111, 9999).ToString();
+            string htmlContent = VerificationMailConstant.SignupEmailVerificationContent
+                        .Replace("{{VID}}", vid)
+                        .Replace("{{TFC}}", tfc_code);
+            userdetails.VID = vid;
+            userdetails.ExpiryTime = DateTime.UtcNow.AddMinutes(AppConfigHelper.VerificationExpiryMinute);
+            userdetails.verificationType = SucessPointCore.Domain.Enums.EmailVerificationType.RegistrationEmail;
+
+            // Generate encrypted password
+            var passwordEncryptionResult = GetEncryptedPasswordAndPasswordKey(userdetails.Password);
+
+            // Assign encypted password details
+            userdetails.PasswordKey = passwordEncryptionResult.passwordKey;
+            userdetails.EncryptedPassword = passwordEncryptionResult.encyptedPassword;
+
+            // we should not save until email gone so that user can signup again if wanted to.
+
+            var sendResponse = _emailService.SendSignupAccountVerificaitonLink(userdetails.EmailID, htmlContent, SucessPointCore.Domain.Enums.EmailVerificationType.RegistrationEmail);
+            if (sendResponse)
+            {
+                _userRepository.SignupUser(userdetails);
+            }
+
+
+            return vid;
+
+        }
+        private (string encyptedPassword, string passwordKey) GetEncryptedPasswordAndPasswordKey(string plainPassword)
+        {
+            string passwordKey = new NumberGenerator().GenerateRandomText(10);
+            return (ComputeSHA256Hash(plainPassword.Trim() + passwordKey + AppConfigHelper.PasswordEncyptionKey), passwordKey);
+        }
+
+        private string ComputeSHA256Hash(string input)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+                byte[] hashBytes = sha256.ComputeHash(inputBytes);
+
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < hashBytes.Length; i++)
+                {
+                    builder.Append(hashBytes[i].ToString("x2"));
+                }
+
+                return builder.ToString();
+            }
+        }
+        private string GetUserPassworkdKey(string userName)
+        {
+            return _userRepository.GetUserPasswordKey(userName);
+        }
+
     }
 }

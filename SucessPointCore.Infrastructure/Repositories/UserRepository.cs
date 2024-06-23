@@ -4,7 +4,6 @@ using SucessPointCore.Domain.Entities;
 using SucessPointCore.Domain.Helpers;
 using SucessPointCore.Infrastructure.Interfaces;
 using System.Data;
-using System.Reflection.Metadata;
 
 namespace SucessPointCore.Infrastructure.Repositories
 {
@@ -212,11 +211,65 @@ namespace SucessPointCore.Infrastructure.Repositories
                     conn.Open();
 
                     DynamicParameters parameters = new DynamicParameters();
-                    parameters.Add("@p_UserID", tokenData.UserID);
-                    parameters.Add("@p_RefreshToken", tokenData.RefreshToken);
-                    parameters.Add("@p_Token_Expiry_Minute", tokenData.RefreshTokenExpiryTime);
+                    parameters.Add("p_UserID", tokenData.UserID);
+                    parameters.Add("p_RefreshToken", tokenData.RefreshToken);
+                    parameters.Add("p_Token_Expiry_Minute", tokenData.RefreshTokenExpiryTime);
 
                     return conn.Execute("sp_SP_RefreshToken_Upsert", param: parameters) > 0;
+                }
+                catch (Exception)
+                {
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    throw;
+                }
+            }
+        }
+
+        public bool IsEmailAvailableForSignup(string userEmailId)
+        {
+            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
+            {
+                try
+                {
+                    conn.Open();
+
+                    DynamicParameters parameters = new DynamicParameters();
+                    parameters.Add("p_UserEmailId", userEmailId);
+
+                    return !(conn.Execute("sp_SP_User_IsEmailAvailableForSignup", param: parameters) > 0);
+                }
+                catch (Exception)
+                {
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    throw;
+                }
+            }
+        }
+
+        public bool SignupUser(SignupCredentials userdetails)
+        {
+            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
+            {
+                try
+                {
+                    conn.Open();
+
+                    DynamicParameters parameters = new DynamicParameters();
+                    parameters.Add("p_UserEmailId", userdetails.EmailID);
+                    parameters.Add("p_EncryptedPassword", userdetails.EncryptedPassword);
+                    parameters.Add("p_Passwordkey", userdetails.PasswordKey);
+
+                    parameters.Add("p_VID", userdetails.VID);
+                    parameters.Add("p_TFC", userdetails.TFC);
+                    parameters.Add("p_ExpiryTime", userdetails.ExpiryTime);
+
+                    return conn.Execute("sp_SP_User_SignupUser", param: parameters) > 0;
                 }
                 catch (Exception)
                 {

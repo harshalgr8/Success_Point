@@ -10,5 +10,16 @@
 
         public static int TokenExpiryMinute { get; set; } = 30;
         public static int RefreshTokenExpiryMinute { get; set; } = 60;
+
+        public static int VerificationExpiryMinute { get; set; } = 30;
+
+        public static string SMTPURL { get; set; }
+
+        public static string SMTPPORT { get; set; }
+
+        public static string SignupEmailCredentials { get; set; }
+        public static string ForgetEmailCredentials { get; set; }
+        public static string DeleteAccountEmailCredentials { get; set; }
+
     }
 }

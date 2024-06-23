@@ -2,7 +2,7 @@
 
 namespace SucessPointCore.Domain.Entities
 {
-    public class UpdatePassword : User
+    public class UpdatePassword :  User
     {
 
         [JsonIgnore]

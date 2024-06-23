@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SuccessPointCore.Application.Interfaces;
+using SucessPointCore.Api.HttpHelper;
 using SucessPointCore.Domain.Entities;
 using SucessPointCore.Domain.Helpers;
 
@@ -28,6 +29,12 @@ namespace SucessPointCore.Api.Controllers
         {
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    var errorResponse = new { isSuccess = false, message = "InvalidIncomplete user information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
+                    return BadRequest(errorResponse);
+                }
+
                 var validationResult = _userService.ValidateLoginRequest(userinfo);
                 if (!validationResult.isValid)
                 {

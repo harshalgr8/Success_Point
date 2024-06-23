@@ -22,7 +22,7 @@ namespace SucessPointCore.Infrastructure.Repositories
                     parameters.Add("p_StackTrace", errorData.StackTrace);
                     parameters.Add("p_UserID", errorData.UserID);
 
-                    return conn.Execute("SP_ErrorLog_Insert", param: parameters) > 0;
+                    return conn.Execute("sp_ErrorLog_Insert", param: parameters) > 0;
                 }
                 catch (Exception)
                 {

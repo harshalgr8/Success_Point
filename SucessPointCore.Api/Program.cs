@@ -104,7 +104,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                                 return Un_AuthorizedResponse(context);
                             }
 
-                            
+
 
                             if (!ValidateToken(header_token))
                             {
@@ -147,17 +147,13 @@ builder.Services.AddScoped<IErrorLogService, ErrorLogService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 
 var app = builder.Build();
 
-
-AppConfigHelper.ConnectionString = app.Configuration.GetConnectionString("SucessPointString");
-AppConfigHelper.PasswordEncyptionKey = app.Configuration["SecurityKeys:PasswordEncryptionKey"];
-AppConfigHelper.JWTTokenEncryptionKey = app.Configuration["SecurityKeys:JWTTokenEncryptionKey"];
-AppConfigHelper.Issuer = app.Configuration["SecurityKeys:Issuer"];
-AppConfigHelper.Audience = app.Configuration["SecurityKeys:Audience"];
-AppConfigHelper.TokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:TokenExpiryMinutes"]);
-AppConfigHelper.RefreshTokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:RefreshTokenExpiryMinutes"]);
+SetAppConfigHelperValues();
+CreateDefault();
 
 
 // Configure the HTTP request pipeline.
@@ -196,9 +192,31 @@ void CreateDefault()
     // Note I had single hosting with limited database capacity.
     // hence I thought to keep table with SP abbrivation to identify for which project this table refers to.
     // here sp_SP means small sp (store procedure abbrivation) and capital (SP) is for SuccessPoint project database.
-    var initiateSqlDbScript = new DbSchemaUpdate(AppConfigHelper.ConnectionString);
-    initiateSqlDbScript.CreateDefaults();
+    new DbSchemaUpdate(AppConfigHelper.ConnectionString, new ErrorLogRepository()).CreateDefaults();
 }
+
+void SetAppConfigHelperValues() {
+
+    AppConfigHelper.ConnectionString = app.Configuration.GetConnectionString("SucessPointString");
+    AppConfigHelper.PasswordEncyptionKey = app.Configuration["SecurityKeys:PasswordEncryptionKey"];
+    AppConfigHelper.JWTTokenEncryptionKey = app.Configuration["SecurityKeys:JWTTokenEncryptionKey"];
+    AppConfigHelper.Issuer = app.Configuration["SecurityKeys:Issuer"];
+    AppConfigHelper.Audience = app.Configuration["SecurityKeys:Audience"];
+    AppConfigHelper.TokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:TokenExpiryMinutes"]);
+    AppConfigHelper.RefreshTokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:RefreshTokenExpiryMinutes"]);
+
+    // SMTP Email Configuration details
+    AppConfigHelper.SMTPURL = app.Configuration["VerificationMail:SMTP_Domain"];
+    AppConfigHelper.SMTPPORT = app.Configuration["VerificationMail:SMTP_PORT"];
+
+    //Email Account Credentials for sending email by UserSignupVerification, ForgetPasswordVerification, DeleteAccountVerification.
+    AppConfigHelper.SignupEmailCredentials = app.Configuration["VerificationMail:SignupEmailCredentials"];
+    AppConfigHelper.ForgetEmailCredentials = app.Configuration["VerificationMail:ForgetPasswordEmailCredentials"];
+    AppConfigHelper.DeleteAccountEmailCredentials = app.Configuration["VerificationMail:DeleteAccountEmailCredentials"];
+
+    AppConfigHelper.VerificationExpiryMinute = Convert.ToInt32(app.Configuration["VerificationMail:VerificationExpiryMinute"]);
+}
+
 app.Run();
 
 static Task Un_AuthorizedResponse(MessageReceivedContext context)

@@ -31,5 +31,9 @@ namespace SuccessPointCore.Application.Interfaces
         void CreateAdminUser(string password);
 
         (string Token, Guid RefreshToken) GenerateToken(AuthenticatedUser authenticatedUser);
+
+        bool IsEmailAvailableForSignup(string userEmailId);
+
+        string RegisterUserBySignup(SignupCredentials userdetails);
     }
 }
