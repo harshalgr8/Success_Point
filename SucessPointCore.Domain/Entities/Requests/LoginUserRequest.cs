@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SucessPointCore.Domain.Entities
+namespace SucessPointCore.Domain.Entities.Requests
 {
     public class LoginUserRequest : UserCredentials
     {

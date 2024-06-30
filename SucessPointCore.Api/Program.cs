@@ -1,8 +1,6 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 using SuccessPointCore.Application.Interfaces;
 using SuccessPointCore.Application.Services;
 using SucessPointCore.Api.Filters;
@@ -12,12 +10,30 @@ using SucessPointCore.Infrastructure.Interfaces;
 using SucessPointCore.Infrastructure.Repositories;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
+
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins",
+        policyBuilder =>
+        {
+            policyBuilder.WithOrigins("https://sp.premiersolution.in", "https://premiersolution.in")
+                         .AllowAnyHeader()
+                         .AllowAnyMethod()
+                         .AllowCredentials();
+        });
+});
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
@@ -61,100 +77,72 @@ builder.Services.AddSwaggerGen(c =>
             new string[] { }
         }
     });
-
-
 });
 
-
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            options.TokenValidationParameters = new TokenValidationParameters
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["SecurityKeys:Issuer"],
+            ValidAudience = builder.Configuration["SecurityKeys:Audience"],
+            RequireExpirationTime = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["SecurityKeys:JWTTokenEncryptionKey"]))
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = builder.Configuration["SecurityKeys:Issuer"],
-                ValidAudience = builder.Configuration["SecurityKeys:Audience"],
-                RequireExpirationTime = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["SecurityKeys:JWTTokenEncryptionKey"]))
-            };
-            options.Events = new JwtBearerEvents
-            {
-                OnMessageReceived = context =>
+                var endpoint = context.HttpContext.GetEndpoint();
+                if (endpoint != null)
                 {
+                    var authorizeAttributes = endpoint.Metadata
+                        .Where(m => m is Microsoft.AspNetCore.Authorization.AuthorizeAttribute)
+                        .ToList();
 
-                    var endpoint = context.HttpContext.GetEndpoint();
-
-                    if (endpoint != null)
+                    if (authorizeAttributes.Any())
                     {
-                        // check if the endpoint has the authorize attribute
-                        var authorizeattributes = endpoint.Metadata
-                            .Where(m => m is Microsoft.AspNetCore.Authorization.AuthorizeAttribute)
-                            .ToList();
-
-                        if (authorizeattributes.Any())
+                        var headerToken = context.HttpContext.Request.Headers["authorization"].FirstOrDefault()?.Split(" ").Last();
+                        if (headerToken == null)
                         {
-                            var header_token = context.HttpContext.Request.Headers["authorization"].FirstOrDefault()?.Split(" ").Last();
+                            return UnAuthorizedResponse(context);
+                        }
 
-                            if (header_token == null)
-                            {
-                                return Un_AuthorizedResponse(context);
-                            }
-
-
-
-                            if (!ValidateToken(header_token))
-                            {
-                                return Un_AuthorizedResponse(context);
-                            }
+                        if (!ValidateToken(headerToken))
+                        {
+                            return UnAuthorizedResponse(context);
                         }
                     }
+                }
 
-                    return Task.CompletedTask;
-                },
-                //OnAuthenticationFailed = context =>
-                //{
-                //    context.NoResult();
-                //    context.Response.StatusCode = 500;
-                //    context.Response.ContentType = "text/plain";
-                //    return context.Response.WriteAsync(context.Exception.ToString());
-                //},
-                //OnTokenValidated = context =>
-                //{
-                //    // log additional details here if needed
-                //    return Task.CompletedTask;
-                //},
-                //OnChallenge = context =>
-                //{
-                //    context.HandleResponse();
-                //    context.Response.StatusCode = 401;
-                //    context.Response.ContentType = "application/json";
-                //    var result = JsonConvert.SerializeObject(new { error = "you are not authorized" });
-                //    return context.Response.WriteAsync(result);
-                //}
-            };
-        });
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 // Add logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
+// Register your services
 builder.Services.AddScoped<IErrorLogRepository, ErrorLogRepository>();
 builder.Services.AddScoped<IErrorLogService, ErrorLogService>();
-
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-
+// Build the application
 var app = builder.Build();
 
+// Store AppConfig Values
 SetAppConfigHelperValues();
-CreateDefault();
 
+// Create Auto Tables/Procedure/Function/etc/etc
+CreateDefault();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -172,31 +160,29 @@ else
     app.UseHsts();
 }
 
-
-//AppConfigHelper.PasswordEncyptionKey =builder.Configuration["SecurityKeys:PasswordEncryptionKey"]);
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
+app.UseCors("AllowSpecificOrigins"); // Add CORS middleware here
+
 app.UseAuthentication(); // Add authentication middleware
 app.UseAuthorization();  // Add authorization middleware
-//app.UseMiddleware<ExceptionMiddleware>();
 
 app.MapControllers();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+app.Run();
+
 void CreateDefault()
 {
-    // Note I had single hosting with limited database capacity.
-    // hence I thought to keep table with SP abbrivation to identify for which project this table refers to.
-    // here sp_SP means small sp (store procedure abbrivation) and capital (SP) is for SuccessPoint project database.
     new DbSchemaUpdate(AppConfigHelper.ConnectionString, new ErrorLogRepository()).CreateDefaults();
 }
 
-void SetAppConfigHelperValues() {
-
+void SetAppConfigHelperValues()
+{
     AppConfigHelper.ConnectionString = app.Configuration.GetConnectionString("SucessPointString");
     AppConfigHelper.PasswordEncyptionKey = app.Configuration["SecurityKeys:PasswordEncryptionKey"];
     AppConfigHelper.JWTTokenEncryptionKey = app.Configuration["SecurityKeys:JWTTokenEncryptionKey"];
@@ -204,22 +190,15 @@ void SetAppConfigHelperValues() {
     AppConfigHelper.Audience = app.Configuration["SecurityKeys:Audience"];
     AppConfigHelper.TokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:TokenExpiryMinutes"]);
     AppConfigHelper.RefreshTokenExpiryMinute = Convert.ToInt32(app.Configuration["SecurityKeys:RefreshTokenExpiryMinutes"]);
-
-    // SMTP Email Configuration details
     AppConfigHelper.SMTPURL = app.Configuration["VerificationMail:SMTP_Domain"];
     AppConfigHelper.SMTPPORT = app.Configuration["VerificationMail:SMTP_PORT"];
-
-    //Email Account Credentials for sending email by UserSignupVerification, ForgetPasswordVerification, DeleteAccountVerification.
     AppConfigHelper.SignupEmailCredentials = app.Configuration["VerificationMail:SignupEmailCredentials"];
     AppConfigHelper.ForgetEmailCredentials = app.Configuration["VerificationMail:ForgetPasswordEmailCredentials"];
     AppConfigHelper.DeleteAccountEmailCredentials = app.Configuration["VerificationMail:DeleteAccountEmailCredentials"];
-
     AppConfigHelper.VerificationExpiryMinute = Convert.ToInt32(app.Configuration["VerificationMail:VerificationExpiryMinute"]);
 }
 
-app.Run();
-
-static Task Un_AuthorizedResponse(MessageReceivedContext context)
+static Task UnAuthorizedResponse(MessageReceivedContext context)
 {
     context.NoResult();
     context.Response.StatusCode = 401;
@@ -230,7 +209,7 @@ static Task Un_AuthorizedResponse(MessageReceivedContext context)
 bool ValidateToken(string token)
 {
     var tokenHandler = new JwtSecurityTokenHandler();
-    var key = Encoding.UTF8.GetBytes(builder.Configuration["SecurityKeys:JWTTokenEncryptionKey"]); // Change here
+    var key = Encoding.UTF8.GetBytes(builder.Configuration["SecurityKeys:JWTTokenEncryptionKey"]);
 
     try
     {

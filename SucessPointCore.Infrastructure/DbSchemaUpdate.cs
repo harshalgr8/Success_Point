@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using SucessPointCore.Domain.Constants;
 using SucessPointCore.Domain.Entities;
@@ -713,6 +714,128 @@ namespace SucessPointCore.Infrastructure
             }
         }
 
+        public async void Add_sp_SP_Student_GetStudentList() {
+            try
+            {
+
+                StringBuilder queryBuilder = new StringBuilder();
+
+                queryBuilder.AppendLine("USE `premiersolution_in_01`;");
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Student_GetStudentList`;");
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Student_GetStudentList`");
+                queryBuilder.AppendLine("(");
+                queryBuilder.AppendLine("    IN p_PageSize INT,");
+                queryBuilder.AppendLine("    IN p_PageNo INT,");
+                queryBuilder.AppendLine("    IN p_studentname VARCHAR(50)");
+                queryBuilder.AppendLine(")");
+                queryBuilder.AppendLine("BEGIN");
+                queryBuilder.AppendLine("    DECLARE v_Offset INT;");
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("    -- Calculate the offset for pagination");
+                queryBuilder.AppendLine("    SET v_Offset = (p_PageNo - 1) * p_PageSize;");
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("    -- Query for total count");
+                queryBuilder.AppendLine("    SELECT COUNT(*) AS TotalCount");
+                queryBuilder.AppendLine("    FROM sp_Student st");
+                queryBuilder.AppendLine("    INNER JOIN sp_User u ON st.UserID = u.UserID");
+                queryBuilder.AppendLine("    WHERE (p_studentname IS NULL OR p_studentname = '' OR u.DisplayName LIKE CONCAT('%', p_studentname, '%'));");
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("    -- Query for paginated results");
+                queryBuilder.AppendLine("    SELECT st.DisplayName AS StudentName, s.StandardName, c.CourseName, u.DisplayName AS Email, st.StudentID");
+                queryBuilder.AppendLine("    FROM sp_Student st");
+                queryBuilder.AppendLine("    INNER JOIN sp_Standard s ON st.StandardID = s.StandardID");
+                queryBuilder.AppendLine("    INNER JOIN sp_Course c ON st.CourseID = c.CourseID");
+                queryBuilder.AppendLine("    INNER JOIN sp_User u ON st.UserID = u.UserID");
+                queryBuilder.AppendLine("    WHERE (p_studentname IS NULL OR p_studentname = '' OR u.DisplayName LIKE CONCAT('%', p_studentname, '%'))");
+                queryBuilder.AppendLine("    LIMIT v_Offset, p_PageSize;");
+                queryBuilder.AppendLine("END;");
+
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    conn.Open();
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"procedure : Add_sp_SP_User_SignupUser \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        public async void Add_sp_sp_standard_Insert()
+        {
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Standard_Insert`;");
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Standard_Insert`(IN p_standardname VARCHAR(50))");
+                queryBuilder.AppendLine("BEGIN");
+                queryBuilder.AppendLine("    IF NOT EXISTS (SELECT 1 FROM `sp_Standard` WHERE `StandardName` = p_standardname) THEN");
+                queryBuilder.AppendLine("        INSERT INTO `sp_Standard` (`StandardName`) VALUES (p_standardname);");
+                queryBuilder.AppendLine("    END IF;");
+                queryBuilder.AppendLine("END;");
+
+                // To get the complete query string:
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    conn.Open();
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"procedure : Add_sp_SP_User_SignupUser \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        public async void Add_sp_sp_standard_GetStandardList()
+        {
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Standard_GetStandardList`;");
+                queryBuilder.AppendLine();
+                queryBuilder.AppendLine("CREATE PROCEDURE `sp_sp_Standard_GetStandardList`() ");
+                queryBuilder.AppendLine("BEGIN");
+                queryBuilder.AppendLine("    SELECT `StandardID`, `StandardName` FROM `sp_standard`;");
+                queryBuilder.AppendLine("END;");
+
+
+                // To get the complete query string:
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    conn.Open();
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"procedure : Add_sp_SP_User_SignupUser \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+            }
+        }
+        
         public void CreateDefaults()
         {
             #region Tables
@@ -773,6 +896,16 @@ namespace SucessPointCore.Infrastructure
 
             // Drops if exists and created new procedure for inserting User and verification table.
             Add_sp_SP_User_SignupUser();
+
+            // Drop if exists and  created new procedure for get studentlist.
+            Add_sp_SP_Student_GetStudentList();
+
+            // Drop if exists and create new procedrue for get Standardlist
+            Add_sp_sp_standard_GetStandardList();
+
+            // drop if exists and create new procedure for standard insert.
+            Add_sp_sp_standard_Insert();
+
             #endregion
 
         }

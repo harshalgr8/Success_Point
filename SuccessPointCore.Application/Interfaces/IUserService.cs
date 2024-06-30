@@ -1,5 +1,7 @@
 ﻿
 using SucessPointCore.Domain.Entities;
+using SucessPointCore.Domain.Entities.Requests;
+using SucessPointCore.Domain.Entities.Responses;
 
 namespace SuccessPointCore.Application.Interfaces
 {
@@ -7,11 +9,11 @@ namespace SuccessPointCore.Application.Interfaces
     {
         int GetUserCount();
 
-        int CreateUser(CreateUser userinfo);
+        int CreateUser(CreateUserRequest userinfo);
 
-        string ComputeSHA256Hash(string input);
+        //string ComputeSHA256Hash(string input);
 
-        bool UpdateUserInfo(CreateUser userinfo);
+        bool UpdateUserInfo(CreateUserRequest userinfo);
 
         bool UpdateUserPassword(UpdatePassword userinfo);
 
@@ -35,5 +37,9 @@ namespace SuccessPointCore.Application.Interfaces
         bool IsEmailAvailableForSignup(string userEmailId);
 
         string RegisterUserBySignup(SignupCredentials userdetails);
+        StudentListResponse GetStudentList(int pageSize, int pageNo, string studentName);
+        IEnumerable<Standard> GetStandardList();
+
+        bool CreateStandard(string standardName);
     }
 }

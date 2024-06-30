@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SucessPointCore.Domain.Entities;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace SucessPointCore.Api.Controllers
 {
@@ -16,8 +17,19 @@ namespace SucessPointCore.Api.Controllers
 
         public IActionResult Index()
         {
-            ViewData["Environment"] =  _env.IsDevelopment() ? "Development" : "Production";
+            ViewData["Environment"] = _env.IsDevelopment() ? "Development" : "Production";
+
+            ViewData["Version"] = GetFileVersion();
+
             return View();
+        }
+
+        private static string? GetFileVersion()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var fileVersionInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
+            var FileVersion = fileVersionInfo.FileVersion;
+            return FileVersion;
         }
 
         public IActionResult Privacy()

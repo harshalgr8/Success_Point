@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SuccessPointCore.Application.Interfaces;
 using SucessPointCore.Api.HttpHelper;
 using SucessPointCore.Domain.Entities;
+using SucessPointCore.Domain.Entities.Requests;
 using SucessPointCore.Domain.Helpers;
 
 namespace SucessPointCore.Api.Controllers

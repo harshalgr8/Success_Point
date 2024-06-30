@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using MySqlConnector;
 using SucessPointCore.Domain.Entities;
+using SucessPointCore.Domain.Entities.Requests;
+using SucessPointCore.Domain.Entities.Responses;
 using SucessPointCore.Domain.Helpers;
 using SucessPointCore.Infrastructure.Interfaces;
 using System.Data;
@@ -9,7 +11,7 @@ namespace SucessPointCore.Infrastructure.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        public int AddUser(CreateUser userData)
+        public int AddUser(CreateUserRequest userData)
         {
             using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
             {
@@ -37,7 +39,7 @@ namespace SucessPointCore.Infrastructure.Repositories
             }
         }
 
-        public bool UpdateUserInfo(CreateUser userData)
+        public bool UpdateUserInfo(CreateUserRequest userData)
         {
             using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
             {
@@ -270,6 +272,91 @@ namespace SucessPointCore.Infrastructure.Repositories
                     parameters.Add("p_ExpiryTime", userdetails.ExpiryTime);
 
                     return conn.Execute("sp_SP_User_SignupUser", param: parameters) > 0;
+                }
+                catch (Exception)
+                {
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    throw;
+                }
+            }
+        }
+
+        public StudentListResponse GetStudentList(int pageSize, int pageNo, string studentName)
+        {
+            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
+            {
+                try
+                {
+                    conn.Open();
+
+                    DynamicParameters parameters = new DynamicParameters();
+                    parameters.Add("p_PageSize", pageSize);
+                    parameters.Add("p_PageNo", pageNo);
+                    parameters.Add("p_studentname", studentName);
+
+                    var multi = conn.QueryMultiple("sp_SP_Student_GetStudentList", param: parameters);
+
+                    var totalCount = multi.Read<int>().Single();
+                    var students = multi.Read<Student>().ToList();
+
+                    return new StudentListResponse { TotalCount = totalCount, Students = students };
+                }
+                catch (Exception)
+                {
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    throw;
+                }
+            }
+        }
+
+        public IEnumerable<Standard> GetStandardList()
+        {
+
+            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
+            {
+                try
+                {
+                    conn.Open();
+
+                    DynamicParameters parameters = new DynamicParameters();
+
+                    var result = conn.Query<Standard>("sp_sp_standard_GetStandardList", param: parameters);
+
+                    return result;
+
+                }
+                catch (Exception)
+                {
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    throw;
+                }
+            }
+        }
+
+        public bool CreateStandard(string standardName)
+        {
+            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
+            {
+                try
+                {
+                    conn.Open();
+
+                    DynamicParameters parameters = new DynamicParameters();
+                    parameters.Add("p_standardname", standardName);
+
+                    var result = conn.Execute("sp_SP_Standard_Insert", param: parameters) > 0;
+
+                    return result;
+
                 }
                 catch (Exception)
                 {

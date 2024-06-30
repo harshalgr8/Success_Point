@@ -1,8 +1,9 @@
-﻿using SucessPointCore.Domain.Enums;
+﻿using SucessPointCore.Domain.Entities.Requests;
+using SucessPointCore.Domain.Enums;
 
 namespace SucessPointCore.Domain.Entities
 {
-    public class SignupCredentials : SignupUserByEmail
+    public class SignupCredentials : SignupUserByEmailRequest
     {
         public string EncryptedPassword { get; set; }
 

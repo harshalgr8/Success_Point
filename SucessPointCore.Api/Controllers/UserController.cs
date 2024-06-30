@@ -7,6 +7,7 @@ using SucessPointCore.Api.Domain.Helpers;
 using SucessPointCore.Api.HttpHelper;
 using SucessPointCore.Domain.Constants;
 using SucessPointCore.Domain.Entities;
+using SucessPointCore.Domain.Entities.Requests;
 
 namespace SucessPointCore.Api.Controllers
 {
@@ -28,13 +29,13 @@ namespace SucessPointCore.Api.Controllers
         /// <summary>
         /// This enpoint will be called by Admin to create enrolled student account manually.
         /// </summary>
-        /// <param name="userinfo"></param>
+        /// <param name="createUserRequest"></param>
         /// <returns></returns>
         [HttpPost]
         [Route("api/CreateUser")]
         [Authorize]
         [AuthUserType(1)]
-        public IActionResult AddUser([FromBody] CreateUser userinfo)
+        public IActionResult AddUser([FromBody] CreateUserRequest createUserRequest)
         {
             try
             {
@@ -44,7 +45,7 @@ namespace SucessPointCore.Api.Controllers
                     return BadRequest(errorResponse);
                 }
 
-                var result = _userService.CreateUser(userinfo);
+                var result = _userService.CreateUser(createUserRequest);
 
                 var okResponse = new { isSuccess = true, message = "User Created Successfully", Details = new { UserID = result } };
                 return Ok(okResponse);
@@ -60,18 +61,18 @@ namespace SucessPointCore.Api.Controllers
         [HttpGet]
         [Route("api/IsEmailAvaliableForSignup")]
         [AllowAnonymous]
-        public IActionResult CheckEmailExist([FromQuery] string userEmailID)
+        public IActionResult CheckEmailExist([FromQuery] EmailAvailableForSignupRequest userEmailRequest)
         {
             try
             {
                 if (!ModelState.IsValid)
                 {
-                    var errorResponse = new { isSuccess = false, message = "Invalid user information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
+                    var errorResponse = new { isSuccess = false, message = "Invalid email information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
                     return BadRequest(errorResponse);
                 }
 
 
-                var result = _userService.IsEmailAvailableForSignup(userEmailID);
+                var result = _userService.IsEmailAvailableForSignup(userEmailRequest.UserEmail);
 
                 var okResponse = new { isSuccess = true, message = "Ok", Details = new { CanRegister = result } };
                 return Ok(okResponse);
@@ -87,7 +88,7 @@ namespace SucessPointCore.Api.Controllers
         [HttpPost]
         [Route("api/SignupUser")]
         [AllowAnonymous]
-        public IActionResult SignupUser([FromBody] SignupUserByEmail userinfo)
+        public IActionResult SignupUser([FromBody] SignupUserByEmailRequest userinfo)
         {
             try
             {
@@ -129,12 +130,6 @@ namespace SucessPointCore.Api.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    var errorResponse = new { isSuccess = false, message = "InvalidIncomplete user information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
-                    return BadRequest(errorResponse);
-                }
-
                 var okResponse = new { isSuccess = true, message = "OK", Details = new { TotalUser = _userService.GetUserCount() } };
                 return Ok(okResponse);
             }
@@ -153,17 +148,18 @@ namespace SucessPointCore.Api.Controllers
         [Route("api/GetStudents")]
         [Authorize]
         [AuthUserType(1)]
-        public IActionResult GetStudent()
+        public IActionResult GetStudent([FromQuery] GetStudentListRequest studentRequest)
         {
             try
             {
                 if (!ModelState.IsValid)
                 {
-                    var errorResponse = new { isSuccess = false, message = "InvalidIncomplete user information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
+                    var errorResponse = new { isSuccess = false, message = "Invalid or Incomplete student information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
                     return BadRequest(errorResponse);
                 }
 
-                var okResponse = new { isSuccess = true, message = "OK", Details = new { TotalUser = _userService.GetUserCount() } };
+                var result = _userService.GetStudentList(studentRequest.PageSize, studentRequest.PageNo, studentRequest.StudentName);
+                var okResponse = new { isSuccess = true, message = "OK", Details = result };
                 return Ok(okResponse);
             }
             catch (Exception ex)
@@ -185,12 +181,6 @@ namespace SucessPointCore.Api.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    var errorResponse = new { isSuccess = false, message = "InvalidIncomplete user information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
-                    return BadRequest(errorResponse);
-                }
-
 
                 var authorization = Request.Headers["Authorization"].ToString();
                 if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer "))
@@ -215,6 +205,50 @@ namespace SucessPointCore.Api.Controllers
             }
         }
 
+        [HttpGet]
+        [Authorize]
+        [Route("api/GetStandard")]
+        public IActionResult GetStandard()
+        {
+            try
+            {
+                var result = _userService.GetStandardList();
+
+                var okResponse = new { isSuccess = true, message = "OK", Details = result };
+                return Ok(okResponse);
+            }
+            catch (Exception ex)
+            {
+                _errorLogService.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                return StatusCode(500, MessageConstant.InternalServerError);
+            }
+        }
+
+        [HttpPost]
+        [Authorize]
+        [AuthUserType(1)]
+        [Route("api/CreateStandard")]
+        public IActionResult CreateStandard([FromQuery] CreateStandardRequest createStandardRequest)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var errorResponse = new { isSuccess = false, message = "Invalid or Incomplete information provided", Details = HttpContextHelper.GetModelStateErrors(this) };
+                    return BadRequest(errorResponse);
+                }
+
+                var result = _userService.CreateStandard(createStandardRequest.StandardName);
+
+                var okResponse = new { isSuccess = true, message = "OK", Details = result };
+                return Ok(okResponse);
+            }
+            catch (Exception ex)
+            {
+                _errorLogService.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                return StatusCode(500, MessageConstant.InternalServerError);
+            }
+        }
         #endregion
 
 

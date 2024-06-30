@@ -2,9 +2,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace SucessPointCore.Domain.Entities
+namespace SucessPointCore.Domain.Entities.Requests
 {
-    public class SignupUserByEmail
+    public class SignupUserByEmailRequest
     {
         [Required]
         [EmailAddress(ErrorMessage = MessageConstant.InvalidEmailID)]
@@ -14,6 +14,6 @@ namespace SucessPointCore.Domain.Entities
         [StringLength(maximumLength: 20, MinimumLength = 6, ErrorMessage = MessageConstant.InvalidCredentials)]
         public string Password { get; set; }
 
-        
+
     }
 }

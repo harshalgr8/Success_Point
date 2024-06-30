@@ -2,6 +2,8 @@
 using SucessPointCore.Api.Domain.Helpers;
 using SucessPointCore.Domain.Constants;
 using SucessPointCore.Domain.Entities;
+using SucessPointCore.Domain.Entities.Requests;
+using SucessPointCore.Domain.Entities.Responses;
 using SucessPointCore.Domain.Helpers;
 using SucessPointCore.Infrastructure.Interfaces;
 using System.Security.Cryptography;
@@ -25,7 +27,7 @@ namespace SuccessPointCore.Application.Services
         }
 
 
-        public int CreateUser(CreateUser userinfo)
+        public int CreateUser(CreateUserRequest userinfo)
         {
             var (encyptedPassword, passwordKey) = GetEncryptedPasswordAndPasswordKey(userinfo.Password);
 
@@ -34,8 +36,8 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.AddUser(userinfo);
         }
 
-  
-        public bool UpdateUserInfo(CreateUser userinfo)
+
+        public bool UpdateUserInfo(CreateUserRequest userinfo)
         {
             return _userRepository.UpdateUserInfo(userinfo);
         }
@@ -45,7 +47,7 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.UpdateUserPassword(userinfo);
         }
 
-       
+
         public AuthenticatedUser CheckLoginCredentials(string username, string password)
         {
 
@@ -94,7 +96,7 @@ namespace SuccessPointCore.Application.Services
 
         public void CreateAdminUser(string password)
         {
-            CreateUser(new CreateUser { UserName = "admin", Password = password, Active = true, UserType = 1 });
+            CreateUser(new CreateUserRequest { UserName = "admin", Password = password, Active = true, UserType = 1 });
         }
 
         public (string Token, Guid RefreshToken) GenerateToken(AuthenticatedUser authenticatedUser)
@@ -136,6 +138,21 @@ namespace SuccessPointCore.Application.Services
             return vid;
 
         }
+
+        public StudentListResponse GetStudentList(int pageSize, int pageNo, string studentName)
+        {
+            return _userRepository.GetStudentList(pageSize, pageNo, studentName);
+        }
+
+        public IEnumerable<Standard> GetStandardList()
+        {
+            return _userRepository.GetStandardList();
+        }
+
+        public bool CreateStandard(string standardName)
+        {
+            return _userRepository.CreateStandard(standardName);
+        }
         private (string encyptedPassword, string passwordKey) GetEncryptedPasswordAndPasswordKey(string plainPassword)
         {
             string passwordKey = new NumberGenerator().GenerateRandomText(10);
@@ -162,6 +179,7 @@ namespace SuccessPointCore.Application.Services
         {
             return _userRepository.GetUserPasswordKey(userName);
         }
+
 
     }
 }
