@@ -878,6 +878,43 @@ namespace SucessPointCore.Infrastructure
             }
         }
 
+        public async void Add_sp_SP_Course_Insert()
+        {
+
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+
+
+                // Drop procedure if exists
+                queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Course_Insert`;");
+
+                // CREATE PROCEDURE block
+                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Course_Insert`(IN p_CourseName VARCHAR(200), IN p_CreatedBy INT) ");
+                queryBuilder.AppendLine("BEGIN ");
+                queryBuilder.AppendLine("    INSERT INTO `sp_course` (`CourseName`, `IsActive`, `CreatedBy`, `CreatedOn`, `ChangedBy`, `ChangedOn`) ");
+                queryBuilder.AppendLine("    VALUES (p_CourseName, 1, p_CreatedBy, NOW(), p_CreatedBy, NOW()); ");
+                queryBuilder.AppendLine("    SELECT LAST_INSERT_ID(); ");
+                queryBuilder.AppendLine("END;");
+
+                // To get the complete query string:
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    conn.Open();
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"procedure : Add_sp_SP_User_SignupUser \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
         public void CreateDefaults()
         {
             #region Tables
@@ -942,11 +979,17 @@ namespace SucessPointCore.Infrastructure
             // Drop if exists and  created new procedure for get studentlist.
             Add_sp_SP_Student_GetStudentList();
 
-            // Drop if exists and create new procedrue for get Standardlist
+            // Drop if exists and create new procedrue for get Standardlist.
             Add_sp_sp_standard_GetStandardList();
 
             // drop if exists and create new procedure for standard insert.
             Add_sp_sp_standard_Insert();
+
+            // drop if exists and create new procedure for CourseList.
+            Add_sp_SP_Course_GetCourseList();
+
+            // drop if exists and create new procedure for Course insert.
+            Add_sp_SP_Course_Insert();
 
             #endregion
 
