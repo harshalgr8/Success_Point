@@ -24,7 +24,7 @@ namespace SuccessPointCore.Application.Interfaces
       
         bool UpsertRefreshToken(UpsertRefreshToken tokenData);
 
-        IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID);
+        
 
         (bool isValid, string message) ValidateLoginRequest(LoginUserRequest userinfo);
 
@@ -38,8 +38,8 @@ namespace SuccessPointCore.Application.Interfaces
 
         string RegisterUserBySignup(SignupCredentials userdetails);
         StudentListResponse GetStudentList(int pageSize, int pageNo, string studentName);
-        IEnumerable<Standard> GetStandardList();
+        
 
-        bool CreateStandard(string standardName);
+        
     }
 }

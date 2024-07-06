@@ -17,12 +17,10 @@ namespace SucessPointCore.Infrastructure.Interfaces
 
         AuthenticatedUser CheckCredentials(string userName, string encryptedPassword);
 
-        IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID);
         bool UpsertRefreshToken(UpsertRefreshToken tokenData);
         bool IsEmailAvailableForSignup(string userEmailId);
         bool SignupUser(SignupCredentials userdetails);
         StudentListResponse GetStudentList(int pageSize, int pageNo, string studentName);
-        IEnumerable<Standard> GetStandardList();
-        bool CreateStandard(string standardName);
+        
     }
 }

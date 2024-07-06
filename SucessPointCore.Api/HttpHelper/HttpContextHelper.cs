@@ -15,7 +15,7 @@ namespace SucessPointCore.Api.HttpHelper
                 .Select(error => $"{errorNumber++}. {error.ErrorMessage}");
         }
 
-        public static int GetUserIDFromState(ControllerBase controller)
+        public static int GetUserIDFromClaims(ControllerBase controller)
         {
             var user = controller.HttpContext.User;
 

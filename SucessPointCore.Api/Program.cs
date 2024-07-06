@@ -128,12 +128,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-// Register your services
+// Register your Repositories
 builder.Services.AddScoped<IErrorLogRepository, ErrorLogRepository>();
 builder.Services.AddScoped<IErrorLogService, ErrorLogService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IStandardRepository, StandardRepository>();
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+
+// Register your Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IStandardService, StandardService>();
 
 // Build the application
 var app = builder.Build();

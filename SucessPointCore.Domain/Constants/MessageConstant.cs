@@ -15,5 +15,12 @@
         public const string SignupVerificationEmailSent = "Account Signup Verification Email Sent";
 
         public const string InternalServerError = "Internal Error Occurred. Please Contact Us";
+
+        //Course
+        public const string ValidCourseNameRequired = "valid Course name required";
+
+        //Standard
+
+        public const string ValidStandardNameRequired = "Valid Standard name requried";
     }
 }

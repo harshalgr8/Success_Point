@@ -164,46 +164,6 @@ namespace SucessPointCore.Infrastructure.Repositories
             }
         }
 
-        public IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID)
-        {
-
-            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
-            {
-                try
-                {
-                    conn.Open();
-
-                    DynamicParameters parameters = new DynamicParameters();
-                    parameters.Add("p_UserID", userID);
-
-                    var result = conn.Query<EnrolledCourse>("sp_SP_User_GetUserEnrolledCourses", param: parameters);
-
-                    var enrolledCourseGroup = result.GroupBy(x => x.CourseName);
-                    List<EnrolledCoursesInfo> courseList = new List<EnrolledCoursesInfo>();
-                    foreach (var item in enrolledCourseGroup)
-                    {
-                        courseList.Add(new EnrolledCoursesInfo { CourseName = item.Key, videoList = item.Select(x => x).ToList() });
-                    }
-
-                    foreach (var item in courseList)
-                    {
-                        item.videoList = item.videoList.Select(x => new EnrolledCourse { VideoName = x.VideoName, videoUrl = "http://sp.premiersolution.in/api/videos?videoFileName=" + x.VideoName }).ToList();
-                    }
-
-                    return courseList;
-
-                }
-                catch (Exception)
-                {
-                    if (conn.State == ConnectionState.Open)
-                    {
-                        conn.Close();
-                    }
-                    throw;
-                }
-            }
-        }
-
         public bool UpsertRefreshToken(UpsertRefreshToken tokenData)
         {
             using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
@@ -303,60 +263,6 @@ namespace SucessPointCore.Infrastructure.Repositories
                     var students = multi.Read<Student>().ToList();
 
                     return new StudentListResponse { TotalCount = totalCount, Students = students };
-                }
-                catch (Exception)
-                {
-                    if (conn.State == ConnectionState.Open)
-                    {
-                        conn.Close();
-                    }
-                    throw;
-                }
-            }
-        }
-
-        public IEnumerable<Standard> GetStandardList()
-        {
-
-            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
-            {
-                try
-                {
-                    conn.Open();
-
-                    DynamicParameters parameters = new DynamicParameters();
-
-                    var result = conn.Query<Standard>("sp_sp_standard_GetStandardList", param: parameters);
-
-                    return result;
-
-                }
-                catch (Exception)
-                {
-                    if (conn.State == ConnectionState.Open)
-                    {
-                        conn.Close();
-                    }
-                    throw;
-                }
-            }
-        }
-
-        public bool CreateStandard(string standardName)
-        {
-            using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
-            {
-                try
-                {
-                    conn.Open();
-
-                    DynamicParameters parameters = new DynamicParameters();
-                    parameters.Add("p_standardname", standardName);
-
-                    var result = conn.Execute("sp_SP_Standard_Insert", param: parameters) > 0;
-
-                    return result;
-
                 }
                 catch (Exception)
                 {

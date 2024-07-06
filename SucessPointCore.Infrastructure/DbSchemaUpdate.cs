@@ -25,7 +25,8 @@ namespace SucessPointCore.Infrastructure
         /// <summary>
         /// It creates ErrorLog table which will store all the information related to erros.
         /// </summary>
-        public async void CreateTable_sp_errorlog() {
+        public async void CreateTable_sp_errorlog()
+        {
             try
             {
                 StringBuilder queryBuilder = new StringBuilder();
@@ -54,7 +55,7 @@ namespace SucessPointCore.Infrastructure
                 Console.WriteLine(ex.ToString());
             }
         }
-        
+
         /// <summary>
         /// It creates Users table which will storing user(student) of platform including admin
         /// </summary>
@@ -93,7 +94,7 @@ namespace SucessPointCore.Infrastructure
                 Console.WriteLine(ex.ToString());
             }
         }
-        
+
         /// <summary>
         /// It creates Standard table which will store student class/standard information
         /// </summary>
@@ -128,7 +129,8 @@ namespace SucessPointCore.Infrastructure
         /// <summary>
         /// It creates Course table which will store course that student can enroll if needed.
         /// </summary>
-        public async void CreateTable_sp_course() {
+        public async void CreateTable_sp_course()
+        {
             try
             {
                 StringBuilder queryBuilder = new StringBuilder();
@@ -167,7 +169,8 @@ namespace SucessPointCore.Infrastructure
         /// <summary>
         /// It creates coursevideos table that store information of videos of various courses
         /// </summary>
-        public async void CreateTable_sp_coursevideos() {
+        public async void CreateTable_sp_coursevideos()
+        {
             try
             {
                 StringBuilder queryBuilder = new StringBuilder();
@@ -299,7 +302,8 @@ namespace SucessPointCore.Infrastructure
 
 
         //It creates FileInfo table which stores information of videos uploaded on system by admin
-        public async void CreteTable_sp_filesinfo() {
+        public async void CreteTable_sp_filesinfo()
+        {
 
             try
             {
@@ -402,7 +406,8 @@ namespace SucessPointCore.Infrastructure
         #region Procedures
 
 
-        public async void Add_SP_ErrorLog_Insert() {
+        public async void Add_SP_ErrorLog_Insert()
+        {
 
             try
             {
@@ -714,7 +719,8 @@ namespace SucessPointCore.Infrastructure
             }
         }
 
-        public async void Add_sp_SP_Student_GetStudentList() {
+        public async void Add_sp_SP_Student_GetStudentList()
+        {
             try
             {
 
@@ -775,13 +781,14 @@ namespace SucessPointCore.Infrastructure
             {
                 StringBuilder queryBuilder = new StringBuilder();
 
-                queryBuilder.AppendLine();
                 queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Standard_Insert`;");
-                queryBuilder.AppendLine();
-                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Standard_Insert`(IN p_standardname VARCHAR(50))");
+
+                // CREATE PROCEDURE block
+                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Standard_Insert`(IN p_standardname VARCHAR(50), IN p_CreatedBy INT)");
                 queryBuilder.AppendLine("BEGIN");
                 queryBuilder.AppendLine("    IF NOT EXISTS (SELECT 1 FROM `sp_Standard` WHERE `StandardName` = p_standardname) THEN");
-                queryBuilder.AppendLine("        INSERT INTO `sp_Standard` (`StandardName`) VALUES (p_standardname);");
+                queryBuilder.AppendLine("        INSERT INTO `sp_Standard` (`StandardName`, CreatedBy, CreatedOn) VALUES (p_standardname, p_CreatedBy, NOW());");
+                queryBuilder.AppendLine("        SELECT LAST_INSERT_ID();");
                 queryBuilder.AppendLine("    END IF;");
                 queryBuilder.AppendLine("END;");
 
@@ -835,7 +842,42 @@ namespace SucessPointCore.Infrastructure
                 Console.WriteLine(ex.ToString());
             }
         }
-        
+
+        public async void Add_sp_SP_Course_GetCourseList()
+        {
+
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+
+
+                // Drop procedure if exists
+                queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Course_GetCourseList`;");
+
+                // CREATE PROCEDURE block
+                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Course_GetCourseList`() ");
+                queryBuilder.AppendLine("BEGIN ");
+                queryBuilder.AppendLine("    SELECT `CourseID`, `CourseName` FROM `sp_course`; ");
+                queryBuilder.AppendLine("END;");
+
+                // To get the complete query string:
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    conn.Open();
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"procedure : Add_sp_SP_User_SignupUser \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
         public void CreateDefaults()
         {
             #region Tables
@@ -857,7 +899,7 @@ namespace SucessPointCore.Infrastructure
 
             // create FilesInfo table.
             CreteTable_sp_filesinfo();
-            
+
             // create Student table.
             CreateTable_sp_student();
 

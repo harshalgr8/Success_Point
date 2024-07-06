@@ -67,11 +67,8 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.UpsertRefreshToken(tokenData);
         }
 
-        public IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID)
-        {
-            return _userRepository.GetEnrolledCourses(userID);
-        }
-
+       
+        
         public (bool isValid, string message) ValidateLoginRequest(LoginUserRequest userinfo)
         {
             if (string.IsNullOrWhiteSpace(userinfo.GrantType) || userinfo.GrantType != "password")
@@ -144,15 +141,6 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.GetStudentList(pageSize, pageNo, studentName);
         }
 
-        public IEnumerable<Standard> GetStandardList()
-        {
-            return _userRepository.GetStandardList();
-        }
-
-        public bool CreateStandard(string standardName)
-        {
-            return _userRepository.CreateStandard(standardName);
-        }
         private (string encyptedPassword, string passwordKey) GetEncryptedPasswordAndPasswordKey(string plainPassword)
         {
             string passwordKey = new NumberGenerator().GenerateRandomText(10);
