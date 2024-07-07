@@ -17,9 +17,9 @@ namespace SuccessPointCore.Application.Services
             return _courseRepository.GetCourses();
         }
 
-        public int CreateCourse(string courseName, int createdBy)
+        public int UpsertCourse(int courseId, string courseName, int createdBy)
         {
-            return _courseRepository.AddCourse(courseName, createdBy);
+            return _courseRepository.UpsertCourse(courseId,courseName, createdBy);
         }
 
         public IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID)

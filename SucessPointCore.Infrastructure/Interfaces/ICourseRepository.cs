@@ -5,7 +5,7 @@ namespace SucessPointCore.Infrastructure.Interfaces
     public interface ICourseRepository
     {
         IEnumerable<Course> GetCourses();
-        int AddCourse(string courseName, int createdBy);
+        int UpsertCourse(int courseID, string courseName, int createdBy);
 
         IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID);
     }

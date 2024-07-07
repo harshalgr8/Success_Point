@@ -169,13 +169,13 @@ namespace SucessPointCore.Infrastructure
         /// <summary>
         /// It creates coursevideos table that store information of videos of various courses
         /// </summary>
-        public async void CreateTable_sp_coursevideos()
+        public async void CreateTable_sp_coursevideo()
         {
             try
             {
                 StringBuilder queryBuilder = new StringBuilder();
 
-                queryBuilder.AppendLine("CREATE TABLE IF NOT EXISTS `sp_coursevideos` (");
+                queryBuilder.AppendLine("CREATE TABLE IF NOT EXISTS `sp_coursevideo` (");
                 queryBuilder.AppendLine("`VideoID` INT(11) NOT NULL AUTO_INCREMENT,");
                 queryBuilder.AppendLine("`VideoName` VARCHAR(50) NOT NULL,");
                 queryBuilder.AppendLine("`CourseID` INT(11) NOT NULL,");
@@ -183,6 +183,32 @@ namespace SucessPointCore.Infrastructure
                 queryBuilder.AppendLine("`VideoHeading` VARCHAR(100) NOT NULL,");
                 queryBuilder.AppendLine("PRIMARY KEY (`VideoID`)");
                 queryBuilder.AppendLine(") ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;");
+
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"function : CreateTable_sp_coursevideos \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+
+            }
+        }
+
+        public async void AlterTable_sp_coursevideo_Add_StandardID()
+        {
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+
+                // ALTER TABLE statement
+                queryBuilder.AppendLine("ALTER TABLE `sp_coursevideo` ");
+                queryBuilder.AppendLine("ADD COLUMN IF NOT Exists `StandardID` int(11);");
 
                 string queryString = queryBuilder.ToString();
 
@@ -783,14 +809,70 @@ namespace SucessPointCore.Infrastructure
 
                 queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Standard_Insert`;");
 
-                // CREATE PROCEDURE block
-                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Standard_Insert`(IN p_standardname VARCHAR(50), IN p_CreatedBy INT)");
+                
+
+                // To get the complete query string:
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    conn.Open();
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"procedure : Add_sp_SP_User_SignupUser \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        public async void Add_sp_sp_standard_Upsert()
+        {
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+
+                queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS sp_SP_Course_Upsert;");
+                queryBuilder.AppendLine("CREATE PROCEDURE sp_SP_Course_Upsert (");
+                queryBuilder.AppendLine("  @p_CourseId INT,");
+                queryBuilder.AppendLine("  @p_CourseName VARCHAR(200),");
+                queryBuilder.AppendLine("  @p_CreatedBy INT,");
+                queryBuilder.AppendLine("  @p_ChangedBy INT");
+                queryBuilder.AppendLine(")");
+                queryBuilder.AppendLine("AS");
                 queryBuilder.AppendLine("BEGIN");
-                queryBuilder.AppendLine("    IF NOT EXISTS (SELECT 1 FROM `sp_Standard` WHERE `StandardName` = p_standardname) THEN");
-                queryBuilder.AppendLine("        INSERT INTO `sp_Standard` (`StandardName`, CreatedBy, CreatedOn) VALUES (p_standardname, p_CreatedBy, NOW());");
-                queryBuilder.AppendLine("        SELECT LAST_INSERT_ID();");
-                queryBuilder.AppendLine("    END IF;");
-                queryBuilder.AppendLine("END;");
+                queryBuilder.AppendLine("  IF @p_CourseId = 0 AND NOT EXISTS (SELECT 1 FROM sp_course WHERE CourseName = @p_CourseName) THEN");
+                queryBuilder.AppendLine("    -- Insert new course");
+                queryBuilder.AppendLine("    INSERT INTO sp_course (");
+                queryBuilder.AppendLine("      CourseName,");
+                queryBuilder.AppendLine("      IsActive,");
+                queryBuilder.AppendLine("      CreatedBy,");
+                queryBuilder.AppendLine("      CreatedOn,");
+                queryBuilder.AppendLine("      ChangedBy,");
+                queryBuilder.AppendLine("      ChangedOn");
+                queryBuilder.AppendLine("    )");
+                queryBuilder.AppendLine("    VALUES (");
+                queryBuilder.AppendLine("      @p_CourseName,");
+                queryBuilder.AppendLine("      1,");
+                queryBuilder.AppendLine("      @p_CreatedBy,");
+                queryBuilder.AppendLine("      GETDATE(),");
+                queryBuilder.AppendLine("      @p_CreatedBy,");
+                queryBuilder.AppendLine("      GETDATE()");
+                queryBuilder.AppendLine("    );");
+                queryBuilder.AppendLine("    SELECT SCOPE_IDENTITY() AS CourseID;");
+                queryBuilder.AppendLine("  ELSE");
+                queryBuilder.AppendLine("    -- Update existing course");
+                queryBuilder.AppendLine("    UPDATE sp_course");
+                queryBuilder.AppendLine("    SET");
+                queryBuilder.AppendLine("      CourseName = @p_CourseName,");
+                queryBuilder.AppendLine("      ChangedBy = @p_ChangedBy,");
+                queryBuilder.AppendLine("      ChangedOn = GETDATE()");
+                queryBuilder.AppendLine("    WHERE CourseID = @p_CourseId;");
+                queryBuilder.AppendLine("  END IF;");
+                queryBuilder.AppendLine("END");
 
                 // To get the complete query string:
                 string queryString = queryBuilder.ToString();
@@ -890,12 +972,7 @@ namespace SucessPointCore.Infrastructure
                 queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS `sp_SP_Course_Insert`;");
 
                 // CREATE PROCEDURE block
-                queryBuilder.AppendLine("CREATE PROCEDURE `sp_SP_Course_Insert`(IN p_CourseName VARCHAR(200), IN p_CreatedBy INT) ");
-                queryBuilder.AppendLine("BEGIN ");
-                queryBuilder.AppendLine("    INSERT INTO `sp_course` (`CourseName`, `IsActive`, `CreatedBy`, `CreatedOn`, `ChangedBy`, `ChangedOn`) ");
-                queryBuilder.AppendLine("    VALUES (p_CourseName, 1, p_CreatedBy, NOW(), p_CreatedBy, NOW()); ");
-                queryBuilder.AppendLine("    SELECT LAST_INSERT_ID(); ");
-                queryBuilder.AppendLine("END;");
+               
 
                 // To get the complete query string:
                 string queryString = queryBuilder.ToString();
@@ -915,6 +992,75 @@ namespace SucessPointCore.Infrastructure
             }
         }
 
+        public async void Add_sp_SP_Course_Upsert()
+        {
+
+            try
+            {
+                StringBuilder queryBuilder = new StringBuilder();
+
+
+                queryBuilder.AppendLine("DROP PROCEDURE IF EXISTS sp_SP_Course_Upsert;");
+                queryBuilder.AppendLine("CREATE PROCEDURE sp_SP_Course_Upsert (");
+                queryBuilder.AppendLine("  IN p_CourseId INT,");
+                queryBuilder.AppendLine("  IN p_CourseName VARCHAR(200),");
+                queryBuilder.AppendLine("  IN p_CreatedBy INT,");
+                queryBuilder.AppendLine("  IN p_ChangedBy INT");
+                queryBuilder.AppendLine(")");
+                queryBuilder.AppendLine("BEGIN");
+                queryBuilder.AppendLine("  IF p_CourseId = 0 AND NOT EXISTS (SELECT 1 FROM sp_course WHERE CourseName = p_CourseName) THEN");
+                queryBuilder.AppendLine("    -- Insert new course");
+                queryBuilder.AppendLine("    INSERT INTO sp_course (");
+                queryBuilder.AppendLine("      CourseName,");
+                queryBuilder.AppendLine("      IsActive,");
+                queryBuilder.AppendLine("      CreatedBy,");
+                queryBuilder.AppendLine("      CreatedOn,");
+                queryBuilder.AppendLine("      ChangedBy,");
+                queryBuilder.AppendLine("      ChangedOn");
+                queryBuilder.AppendLine("    )");
+                queryBuilder.AppendLine("    VALUES (");
+                queryBuilder.AppendLine("      p_CourseName,");
+                queryBuilder.AppendLine("      1,");
+                queryBuilder.AppendLine("      p_CreatedBy,");
+                queryBuilder.AppendLine("      NOW(),");
+                queryBuilder.AppendLine("      p_CreatedBy,");
+                queryBuilder.AppendLine("      NOW()");
+                queryBuilder.AppendLine("    );");
+                queryBuilder.AppendLine("    SELECT LAST_INSERT_ID() AS CourseID;");
+                queryBuilder.AppendLine("  ELSE");
+                queryBuilder.AppendLine("    -- Update existing course");
+                queryBuilder.AppendLine("    UPDATE sp_course");
+                queryBuilder.AppendLine("    SET");
+                queryBuilder.AppendLine("      CourseName = p_CourseName,");
+                queryBuilder.AppendLine("      ChangedBy = p_ChangedBy,");
+                queryBuilder.AppendLine("      ChangedOn = NOW()");
+                queryBuilder.AppendLine("    WHERE CourseID = p_CourseId;");
+                queryBuilder.AppendLine("  END IF;");
+                queryBuilder.AppendLine("END");
+
+                // CREATE PROCEDURE block
+
+
+                // To get the complete query string:
+                string queryString = queryBuilder.ToString();
+
+                using (IDbConnection conn = new MySqlConnection(connectionString: DbConnectionString))
+                {
+                    conn.Open();
+                    await conn.ExecuteAsync(queryString, commandType: CommandType.Text);
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //await File.AppendAllTextAsync(FileConstant.SqlErrorLogFile, $"procedure : Add_sp_SP_User_SignupUser \tError :{ex.Message}\tStackTrace :{ex.StackTrace}\r\n");
+                ErrorLogRepository.AddError(new CreateErrorLog { ErrorMesage = ex.Message, StackTrace = ex.StackTrace, UserID = null });
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+
+
         public void CreateDefaults()
         {
             #region Tables
@@ -932,7 +1078,10 @@ namespace SucessPointCore.Infrastructure
             CreateTable_sp_course();
 
             // create Course Videos table.
-            CreateTable_sp_coursevideos();
+            CreateTable_sp_coursevideo();
+
+            // Alter sp_coursevideo add StandardID column.
+            AlterTable_sp_coursevideo_Add_StandardID();
 
             // create FilesInfo table.
             CreteTable_sp_filesinfo();
@@ -985,11 +1134,17 @@ namespace SucessPointCore.Infrastructure
             // drop if exists and create new procedure for standard insert.
             Add_sp_sp_standard_Insert();
 
+            // Drop if exist and create new procedure for standard upsert.
+            Add_sp_sp_standard_Upsert();
+
             // drop if exists and create new procedure for CourseList.
             Add_sp_SP_Course_GetCourseList();
 
             // drop if exists and create new procedure for Course insert.
             Add_sp_SP_Course_Insert();
+
+            // Upsert Course
+            Add_sp_SP_Course_Upsert();
 
             #endregion
 

@@ -12,9 +12,9 @@ namespace SuccessPointCore.Application.Services
             _repository = standardRepository;
         }
 
-        public int CreateStandard(string standardName, int userID)
+        public int UpsertStandard(int StandardID, string standardName, int userID)
         {
-            return _repository.CreateStandard(standardName, userID);
+            return _repository.UpsertStandard(StandardID, standardName, userID);
         }
 
         public IEnumerable<Standard> GetStandardList()

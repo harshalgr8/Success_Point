@@ -6,7 +6,7 @@ namespace SuccessPointCore.Application.Interfaces
     {
         IEnumerable<Course> GetCourses();
 
-        int CreateCourse(string courseName, int createdBy);
+        int UpsertCourse(int courseId,string courseName, int createdBy);
 
         IEnumerable<EnrolledCoursesInfo> GetEnrolledCourses(int userID);
 

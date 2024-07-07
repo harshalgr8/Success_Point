@@ -36,7 +36,7 @@ namespace SucessPointCore.Infrastructure.Repositories
             }
         }
 
-        public int CreateStandard(string standardName, int createdBy)
+        public int UpsertStandard(int standardId, string standardName, int createdBy)
         {
             using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
             {
@@ -48,7 +48,7 @@ namespace SucessPointCore.Infrastructure.Repositories
                     parameters.Add("p_StandardName", standardName);
                     parameters.Add("p_CreatedBy", createdBy);
 
-                    var result = conn.Execute("sp_SP_Standard_Insert", param: parameters);
+                    var result = conn.Execute("sp_SP_Standard_Upsert", param: parameters);
 
                     return result;
 

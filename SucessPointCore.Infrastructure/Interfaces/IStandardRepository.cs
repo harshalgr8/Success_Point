@@ -5,6 +5,6 @@ namespace SucessPointCore.Infrastructure.Interfaces
     public interface IStandardRepository
     {
         IEnumerable<Standard> GetStandardList();
-        int CreateStandard(string standardName, int createdBy);
+        int UpsertStandard(int standardId, string standardName, int createdBy);
     }
 }

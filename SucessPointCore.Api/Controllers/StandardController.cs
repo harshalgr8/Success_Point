@@ -41,7 +41,7 @@ namespace SucessPointCore.Api.Controllers
         [HttpPost]
         [Authorize]
         [AuthUserType(1)]
-        [Route("api/CreateStandard")]
+        [Route("api/UpsertStandard")]
         public IActionResult CreateStandard([FromQuery] CreateStandardRequest createStandardRequest)
         {
             try
@@ -54,7 +54,7 @@ namespace SucessPointCore.Api.Controllers
 
                 int userID = HttpContextHelper.GetUserIDFromClaims(this);
 
-                var result = _standardService.CreateStandard(createStandardRequest.StandardName, userID);
+                var result = _standardService.UpsertStandard(createStandardRequest.StandardID, createStandardRequest.StandardName, userID);
 
                 var okResponse = new { isSuccess = true, message = "OK", Details = result };
                 return Ok(okResponse);

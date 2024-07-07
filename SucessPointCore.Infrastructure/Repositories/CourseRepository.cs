@@ -9,7 +9,7 @@ namespace SucessPointCore.Infrastructure.Repositories
 {
     public class CourseRepository : ICourseRepository
     {
-        public int AddCourse(string courseName, int createdBy)
+        public int UpsertCourse(int courseID, string courseName, int createdBy)
         {
             using (IDbConnection conn = new MySqlConnection(AppConfigHelper.ConnectionString))
             {
@@ -21,7 +21,7 @@ namespace SucessPointCore.Infrastructure.Repositories
                     parameters.Add("p_CourseName", courseName);
                     parameters.Add("p_CreatedBy", createdBy);
 
-                    var lastCourseID = conn.Execute("sp_SP_Course_Insert", param: parameters);
+                    var lastCourseID = conn.Execute("sp_SP_Course_Upsert", param: parameters);
 
 
                     return lastCourseID;

@@ -45,7 +45,7 @@ namespace SucessPointCore.Api.Controllers
         [HttpPost]
         [Authorize]
         [AuthUserType(1)]
-        [Route("api/CreateCourse")]
+        [Route("api/UpsertCourse")]
         public IActionResult CreateCourse([FromQuery] CreateCourseRequest createCourseRequest)
         {
             try
@@ -58,7 +58,7 @@ namespace SucessPointCore.Api.Controllers
 
                 int userID = HttpContextHelper.GetUserIDFromClaims(this);
 
-                var result = _courseService.CreateCourse(createCourseRequest.CourseName, userID);
+                var result = _courseService.UpsertCourse(createCourseRequest.CourseID, createCourseRequest.CourseName, userID);
 
                 var okResponse = new { isSuccess = true, message = "OK", Details = result };
                 return Ok(okResponse);
@@ -69,6 +69,8 @@ namespace SucessPointCore.Api.Controllers
                 return StatusCode(500, MessageConstant.InternalServerError);
             }
         }
+
+
 
         /// <summary>
         /// This endpoint will return logged in student enrolled course information list

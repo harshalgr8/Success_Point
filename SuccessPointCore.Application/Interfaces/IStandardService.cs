@@ -4,7 +4,7 @@ namespace SuccessPointCore.Application.Interfaces
 {
     public interface IStandardService
     {
-        int CreateStandard(string standardName,int userID);
+        int UpsertStandard(int StandardID, string standardName,int userID);
 
         IEnumerable<Standard> GetStandardList();
     }
