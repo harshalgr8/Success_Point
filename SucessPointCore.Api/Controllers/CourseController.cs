@@ -46,7 +46,7 @@ namespace SucessPointCore.Api.Controllers
         [Authorize]
         [AuthUserType(1)]
         [Route("api/UpsertCourse")]
-        public IActionResult CreateCourse([FromQuery] CreateCourseRequest createCourseRequest)
+        public IActionResult CreateCourse([FromBody] CreateCourseRequest createCourseRequest)
         {
             try
             {

@@ -42,7 +42,7 @@ namespace SucessPointCore.Api.Controllers
         [Authorize]
         [AuthUserType(1)]
         [Route("api/UpsertStandard")]
-        public IActionResult CreateStandard([FromQuery] CreateStandardRequest createStandardRequest)
+        public IActionResult CreateStandard([FromBody] CreateStandardRequest createStandardRequest)
         {
             try
             {
