@@ -1,4 +1,4 @@
-﻿using SucessPointCore.Domain.Entities;
+﻿using SuccessPointCore.Domain.Entities;
 
 namespace SuccessPointCore.Application.Interfaces
 {

@@ -1,7 +1,7 @@
 ﻿
-using SucessPointCore.Domain.Entities;
-using SucessPointCore.Domain.Entities.Requests;
-using SucessPointCore.Domain.Entities.Responses;
+using SuccessPointCore.Domain.Entities;
+using SuccessPointCore.Domain.Entities.Requests;
+using SuccessPointCore.Domain.Entities.Responses;
 
 namespace SuccessPointCore.Application.Interfaces
 {
@@ -21,10 +21,7 @@ namespace SuccessPointCore.Application.Interfaces
 
         AuthenticatedUser CheckLoginCredentials(string username, string password);
 
-      
         bool UpsertRefreshToken(UpsertRefreshToken tokenData);
-
-        
 
         (bool isValid, string message) ValidateLoginRequest(LoginUserRequest userinfo);
 
@@ -37,9 +34,15 @@ namespace SuccessPointCore.Application.Interfaces
         bool IsEmailAvailableForSignup(string userEmailId);
 
         string RegisterUserBySignup(SignupCredentials userdetails);
+        
         StudentListResponse GetStudentList(int pageSize, int pageNo, string studentName);
-        
 
+        bool UpdateStudentInfo(UpdateStudentRequest userData);
         
+        bool ChangeStudentPassword(int studentID, string password);
+
+        bool ChangeLoggedInUserPassword(int userID, string password);
+
+        bool RemoveStudent(int studentID);
     }
 }

@@ -1,5 +1,5 @@
-﻿using SucessPointCore.Domain.Entities;
-using SucessPointCore.Domain.Enums;
+﻿using SuccessPointCore.Domain.Entities;
+using SuccessPointCore.Domain.Enums;
 
 namespace SuccessPointCore.Application.Interfaces
 {

@@ -1,7 +1,7 @@
 ﻿using SuccessPointCore.Application.Interfaces;
-using SucessPointCore.Domain.Entities;
-using SucessPointCore.Domain.Enums;
-using SucessPointCore.Domain.Helpers;
+using SuccessPointCore.Domain.Entities;
+using SuccessPointCore.Domain.Enums;
+using SuccessPointCore.Domain.Helpers;
 using System.Net;
 using System.Net.Mail;
 

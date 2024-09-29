@@ -1,11 +1,11 @@
 ﻿using SuccessPointCore.Application.Interfaces;
-using SucessPointCore.Api.Domain.Helpers;
-using SucessPointCore.Domain.Constants;
-using SucessPointCore.Domain.Entities;
-using SucessPointCore.Domain.Entities.Requests;
-using SucessPointCore.Domain.Entities.Responses;
-using SucessPointCore.Domain.Helpers;
-using SucessPointCore.Infrastructure.Interfaces;
+using SuccessPointCore.Api.Domain.Helpers;
+using SuccessPointCore.Domain.Constants;
+using SuccessPointCore.Domain.Entities;
+using SuccessPointCore.Domain.Entities.Requests;
+using SuccessPointCore.Domain.Entities.Responses;
+using SuccessPointCore.Domain.Helpers;
+using SuccessPointCore.Infrastructure.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -26,7 +26,6 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.GetUserCount();
         }
 
-
         public int CreateUser(CreateUserRequest userinfo)
         {
             var (encyptedPassword, passwordKey) = GetEncryptedPasswordAndPasswordKey(userinfo.Password);
@@ -35,7 +34,6 @@ namespace SuccessPointCore.Application.Services
             userinfo.EncryptedPassword = encyptedPassword;
             return _userRepository.AddUser(userinfo);
         }
-
 
         public bool UpdateUserInfo(CreateUserRequest userinfo)
         {
@@ -46,7 +44,6 @@ namespace SuccessPointCore.Application.Services
         {
             return _userRepository.UpdateUserPassword(userinfo);
         }
-
 
         public AuthenticatedUser CheckLoginCredentials(string username, string password)
         {
@@ -67,8 +64,6 @@ namespace SuccessPointCore.Application.Services
             return _userRepository.UpsertRefreshToken(tokenData);
         }
 
-       
-        
         public (bool isValid, string message) ValidateLoginRequest(LoginUserRequest userinfo)
         {
             if (string.IsNullOrWhiteSpace(userinfo.GrantType) || userinfo.GrantType != "password")
@@ -105,6 +100,7 @@ namespace SuccessPointCore.Application.Services
         {
             return _userRepository.IsEmailAvailableForSignup(userEmailId);
         }
+
         public string RegisterUserBySignup(SignupCredentials userdetails)
         {
             string vid = Guid.NewGuid().ToString();
@@ -114,7 +110,7 @@ namespace SuccessPointCore.Application.Services
                         .Replace("{{TFC}}", tfc_code);
             userdetails.VID = vid;
             userdetails.ExpiryTime = DateTime.UtcNow.AddMinutes(AppConfigHelper.VerificationExpiryMinute);
-            userdetails.verificationType = SucessPointCore.Domain.Enums.EmailVerificationType.RegistrationEmail;
+            userdetails.verificationType = SuccessPointCore.Domain.Enums.EmailVerificationType.RegistrationEmail;
 
             // Generate encrypted password
             var passwordEncryptionResult = GetEncryptedPasswordAndPasswordKey(userdetails.Password);
@@ -125,12 +121,11 @@ namespace SuccessPointCore.Application.Services
 
             // we should not save until email gone so that user can signup again if wanted to.
 
-            var sendResponse = _emailService.SendSignupAccountVerificaitonLink(userdetails.EmailID, htmlContent, SucessPointCore.Domain.Enums.EmailVerificationType.RegistrationEmail);
+            var sendResponse = _emailService.SendSignupAccountVerificaitonLink(userdetails.EmailID, htmlContent, SuccessPointCore.Domain.Enums.EmailVerificationType.RegistrationEmail);
             if (sendResponse)
             {
                 _userRepository.SignupUser(userdetails);
             }
-
 
             return vid;
 
@@ -140,6 +135,28 @@ namespace SuccessPointCore.Application.Services
         {
             return _userRepository.GetStudentList(pageSize, pageNo, studentName);
         }
+
+        public bool UpdateStudentInfo(UpdateStudentRequest userData)
+        {
+            return _userRepository.UpdateStudentInfo(userData);
+        }
+
+        public bool ChangeStudentPassword(int studentID, string plainPassword)
+        {
+            // Generate encrypted password
+            var passwordEncryptionResult = GetEncryptedPasswordAndPasswordKey(plainPassword);
+            return _userRepository.ChangeStudentPassword(studentID, passwordEncryptionResult.encyptedPassword, passwordEncryptionResult.passwordKey);
+        }
+
+        public bool ChangeLoggedInUserPassword(int userID, string plainPassword) {
+            // Generate encrypted password
+            var passwordEncryptionResult = GetEncryptedPasswordAndPasswordKey(plainPassword);
+            return _userRepository.ChangeUserPassword(userID, passwordEncryptionResult.encyptedPassword, passwordEncryptionResult.passwordKey);
+        }
+
+        public bool RemoveStudent(int studentID) {
+            return _userRepository.RemoveStudent(studentID);
+            }
 
         private (string encyptedPassword, string passwordKey) GetEncryptedPasswordAndPasswordKey(string plainPassword)
         {
@@ -163,10 +180,12 @@ namespace SuccessPointCore.Application.Services
                 return builder.ToString();
             }
         }
+
         private string GetUserPassworkdKey(string userName)
         {
             return _userRepository.GetUserPasswordKey(userName);
         }
+
 
 
     }

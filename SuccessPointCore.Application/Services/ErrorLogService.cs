@@ -1,6 +1,6 @@
 ﻿using SuccessPointCore.Application.Interfaces;
-using SucessPointCore.Domain.Entities;
-using SucessPointCore.Infrastructure.Interfaces;
+using SuccessPointCore.Domain.Entities;
+using SuccessPointCore.Infrastructure.Interfaces;
 
 namespace SuccessPointCore.Application.Services
 {

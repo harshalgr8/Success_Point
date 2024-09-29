@@ -1,0 +1,7 @@
+function : CreateTable_sp_course 	Error :Unable to connect to any of the specified MySQL hosts.	StackTrace :   at MySqlConnector.MySqlConnection.OpenAsync(Nullable`1 ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlConnection.cs:line 576
+   at Dapper.SqlMapper.ExecuteImplAsync(IDbConnection cnn, CommandDefinition command, Object param) in /_/Dapper/SqlMapper.Async.cs:line 661
+   at SuccessPointCore.Infrastructure.DbSchemaUpdate.CreateTable_sp_course() in D:\mywork\Aakash\GitLinking\Success_Point_Api\SuccessPointCore.Infrastructure\DbSchemaUpdate.cs:line 150
+function : CreateTable_sp_student 	Error :Connect Timeout expired.	StackTrace :   at MySqlConnector.MySqlConnection.CreateSessionAsync(ConnectionPool pool, Int64 startingTimestamp, Activity activity, Nullable`1 ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlConnection.cs:line 1090
+   at MySqlConnector.MySqlConnection.OpenAsync(Nullable`1 ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlConnection.cs:line 556
+   at Dapper.SqlMapper.ExecuteImplAsync(IDbConnection cnn, CommandDefinition command, Object param) in /_/Dapper/SqlMapper.Async.cs:line 661
+   at SuccessPointCore.Infrastructure.DbSchemaUpdate.CreateTable_sp_student()

@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace SuccessPointCore.Application.Custom_Filters
 {
