@@ -12,3 +12,11 @@
 /SuccessPointCore.Application/obj
 /SucessPointCore.Api/obj
 /SucessPointCore.Api/SqlErrorsLog.txt
+/SuccessPointCore.Api/.config/dotnet-tools.json
+/SuccessPointCore.Api/bin/Debug/net7.0
+/SuccessPointCore.Api/bin/Release/net7.0
+/SuccessPointCore.Api/obj
+/SuccessPointCore.Domain/bin
+/SuccessPointCore.Domain/obj
+/SuccessPointCore.Infrastructure/bin
+/SuccessPointCore.Infrastructure/obj
